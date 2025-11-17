@@ -29,6 +29,7 @@ export interface CreateCustomerData {
   email?: string;
   phone?: string;
   status: string;
+  type?: string;
   budget_min?: number;
   budget_max?: number;
   preferred_property_types?: string[];

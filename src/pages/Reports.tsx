@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -34,9 +34,7 @@ import {
   Download,
   Plus,
   AlertCircle,
-  Calendar,
   TrendingUp,
-  Users,
   Building2,
   Home,
 } from "lucide-react";
@@ -106,7 +104,7 @@ export function Reports() {
   const [reportType, setReportType] = useState("company_growth");
   const { toast } = useToast();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ["reports"],
     queryFn: () => reportService.getAll({ page: 1, limit: 10 }),
     retry: false,

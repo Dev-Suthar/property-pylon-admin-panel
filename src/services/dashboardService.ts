@@ -20,6 +20,7 @@ export interface CompanyGrowthData {
 export interface SubscriptionDistribution {
   name: string;
   value: number;
+  color?: string;
 }
 
 export interface RevenueData {

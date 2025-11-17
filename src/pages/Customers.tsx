@@ -50,7 +50,6 @@ import {
   DollarSign,
   Plus,
   Trash2,
-  Filter,
   X,
 } from "lucide-react";
 import {

@@ -18,12 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -33,7 +27,6 @@ import {
 } from "@/components/ui/pagination";
 import {
   Search,
-  Eye,
   AlertCircle,
   Activity as ActivityIcon,
   ChevronUp,
@@ -41,7 +34,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { activityService, Activity } from "@/services/activityService";
+import { activityService, type Activity } from "@/services/activityService";
 
 const mockActivities: Activity[] = [
   {

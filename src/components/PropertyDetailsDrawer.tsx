@@ -43,8 +43,6 @@ import {
   XCircle,
   Info,
   MessageSquare,
-  Activity,
-  Tag,
 } from 'lucide-react';
 import { formatPriceWithCurrency } from '@/utils/priceUtils';
 import { propertyService, Property } from '@/services/propertyService';
@@ -596,7 +594,7 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                 )}
 
                 {/* Visiting Information */}
-                {(displayProperty.visiting_days?.length > 0 || displayProperty.visiting_start_time || displayProperty.visiting_notes) && (
+                {((displayProperty.visiting_days && displayProperty.visiting_days.length > 0) || displayProperty.visiting_start_time || displayProperty.visiting_notes) && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Visiting Information</CardTitle>
