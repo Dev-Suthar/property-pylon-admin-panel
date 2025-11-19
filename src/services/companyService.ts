@@ -132,7 +132,7 @@ export const companyService = {
     }
   },
 
-  async updateUser(companyId: string, userId: string, data: { name?: string; email?: string; phone?: string; role?: string; is_active?: boolean }): Promise<CompanyUser> {
+  async updateUser(companyId: string, userId: string, data: { name?: string; email?: string; phone?: string; role?: string; is_active?: boolean; password?: string }): Promise<CompanyUser> {
     try {
       const response = await apiClient.put<CompanyUser>(`/admin/companies/${companyId}/users/${userId}`, data);
       return response.data;

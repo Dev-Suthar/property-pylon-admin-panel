@@ -727,7 +727,17 @@ export function CompanyDetailsDrawer({
       return;
     }
     if (editingUser) {
-      updateUserMutation.mutate({ userId: editingUser.id, data: userForm });
+      // Only include password if it's provided (not empty)
+      const updateData: any = {
+        name: userForm.name,
+        email: userForm.email,
+        phone: userForm.phone,
+        role: userForm.role,
+      };
+      if (userForm.password && userForm.password.trim() !== "") {
+        updateData.password = userForm.password;
+      }
+      updateUserMutation.mutate({ userId: editingUser.id, data: updateData });
     } else {
       createUserMutation.mutate(userForm);
     }
@@ -1907,20 +1917,18 @@ export function CompanyDetailsDrawer({
                 </SelectContent>
               </Select>
             </div>
-            {!editingUser && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={userForm.password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setUserForm({ ...userForm, password: e.target.value })
-                  }
-                  placeholder="Leave empty for default password"
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password {editingUser ? "(leave empty to keep current)" : ""}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={userForm.password}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setUserForm({ ...userForm, password: e.target.value })
+                }
+                placeholder={editingUser ? "Enter new password (optional)" : "Leave empty for default password"}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowUserModal(false)}>

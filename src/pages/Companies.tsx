@@ -23,6 +23,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -44,12 +51,14 @@ import {
   Mail,
   Phone,
   MapPin,
+  Trash2,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Pagination,
@@ -59,7 +68,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { companyService, Company } from "@/services/companyService";
+import { companyService, Company, UpdateCompanyData } from "@/services/companyService";
 import { useToast } from "@/hooks/use-toast";
 import { CompanyDetailsDrawer } from "@/components/CompanyDetailsDrawer";
 
@@ -133,8 +142,11 @@ export function Companies() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
@@ -214,6 +226,47 @@ export function Companies() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<UpdateCompanyData> }) =>
+      companyService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      setIsEditDialogOpen(false);
+      setSelectedCompany(null);
+      toast({
+        title: "Success",
+        description: "Company updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update company",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: companyService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      setIsDeleteDialogOpen(false);
+      setCompanyToDelete(null);
+      toast({
+        title: "Success",
+        description: "Company deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete company",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreate = (formData: FormData) => {
     createMutation.mutate({
       name: formData.get("name") as string,
@@ -221,6 +274,24 @@ export function Companies() {
       phone: formData.get("phone") as string,
       address: formData.get("address") as string,
     });
+  };
+
+  const handleUpdate = (formData: FormData) => {
+    if (!selectedCompany) return;
+    const data: Partial<UpdateCompanyData> = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string || undefined,
+      address: formData.get("address") as string || undefined,
+      is_active: formData.get("is_active") === "true",
+    };
+    updateMutation.mutate({ id: selectedCompany.id, data });
+  };
+
+  const handleDelete = () => {
+    if (companyToDelete) {
+      deleteMutation.mutate(companyToDelete.id);
+    }
   };
 
   const handleSort = (field: SortField) => {
@@ -522,9 +593,27 @@ export function Companies() {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          setSelectedCompany(company);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          setCompanyToDelete(company);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -650,9 +739,28 @@ export function Companies() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setSelectedCompany(company);
+                                setIsEditDialogOpen(true);
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600 focus:text-red-600"
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setCompanyToDelete(company);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -785,6 +893,128 @@ export function Companies() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
       />
+
+      {/* Edit Company Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Company</DialogTitle>
+            <DialogDescription>
+              Update company information
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCompany && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleUpdate(new FormData(e.currentTarget));
+              }}
+            >
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-name">Company Name</Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    defaultValue={selectedCompany.name}
+                    placeholder="Enter company name"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    name="email"
+                    type="email"
+                    defaultValue={selectedCompany.email}
+                    placeholder="company@example.com"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-phone">Phone</Label>
+                  <Input
+                    id="edit-phone"
+                    name="phone"
+                    defaultValue={selectedCompany.phone || ""}
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-address">Address</Label>
+                  <Input
+                    id="edit-address"
+                    name="address"
+                    defaultValue={selectedCompany.address || ""}
+                    placeholder="Enter company address"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-is_active">Status</Label>
+                  <Select name="is_active" defaultValue={selectedCompany.is_active ? "true" : "false"}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setSelectedCompany(null);
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Updating..." : "Update Company"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Company</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {companyToDelete?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setCompanyToDelete(null);
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
