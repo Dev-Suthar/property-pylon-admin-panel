@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Sheet,
   SheetContent,
@@ -27,7 +27,11 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  Key,
+  RefreshCw,
+  Copy,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { SalesmanDetails } from '@/services/salesmanService';
 import { salesmanService } from '@/services/salesmanService';
 
@@ -43,7 +47,12 @@ export function SalesmanDetailsDrawer({
   onOpenChange,
 }: SalesmanDetailsDrawerProps) {
   const [companiesPage, setCompaniesPage] = useState(1);
+  const [displayedPassword, setDisplayedPassword] = useState<string | null>(
+    salesman?.password || null
+  );
   const limit = 10;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['salesman-companies', salesman?.id, companiesPage, limit],
@@ -54,6 +63,46 @@ export function SalesmanDetailsDrawer({
       }),
     enabled: !!salesman?.id && open,
   });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: () => salesmanService.resetPassword(salesman!.id),
+    onSuccess: (data) => {
+      setDisplayedPassword(data.password);
+      queryClient.invalidateQueries({ queryKey: ['salesmen'] });
+      toast({
+        title: 'Password Reset',
+        description: 'Password has been reset successfully. New password is displayed below.',
+        duration: 5000,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleCopyPassword = () => {
+    if (displayedPassword) {
+      navigator.clipboard.writeText(displayedPassword);
+      toast({
+        title: 'Copied',
+        description: 'Password copied to clipboard',
+        duration: 2000,
+      });
+    }
+  };
+
+  // Update displayed password when salesman changes
+  useEffect(() => {
+    if (salesman?.password) {
+      setDisplayedPassword(salesman.password);
+    } else {
+      setDisplayedPassword(null);
+    }
+  }, [salesman?.password]);
 
   if (!salesman) return null;
 
@@ -112,28 +161,60 @@ export function SalesmanDetailsDrawer({
                 </div>
               )}
 
-              <div className="flex items-center gap-3">
-                <div className="h-4 w-4 text-slate-400 flex items-center justify-center">
-                  <span className="text-xs">🔒</span>
-                </div>
+              <div className="flex items-start gap-3">
+                <Key className="h-4 w-4 text-slate-400 mt-1" />
                 <div className="flex-1">
-                  <p className="text-sm text-slate-500 mb-1">Password</p>
-                  {salesman.password ? (
-                    <>
-                      <p className="font-medium text-slate-900 font-mono bg-slate-100 px-2 py-1 rounded">
-                        {salesman.password}
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm text-slate-500">Password</p>
+                    {!displayedPassword && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resetPasswordMutation.mutate()}
+                        disabled={resetPasswordMutation.isPending}
+                        className="h-7 text-xs"
+                      >
+                        {resetPasswordMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Resetting...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Reset Password
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  {displayedPassword ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-slate-900 font-mono bg-slate-100 px-3 py-2 rounded flex-1">
+                          {displayedPassword}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyPassword}
+                          className="h-8 w-8 p-0"
+                          title="Copy password"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        This password is visible to super admin. Save it securely.
                       </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        This password is only shown once. Save it securely.
-                      </p>
-                    </>
+                    </div>
                   ) : (
                     <>
                       <p className="font-medium text-slate-600 italic">
                         Password is set (hidden for security)
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Password cannot be displayed. Use the edit option to update it.
+                        Click "Reset Password" to generate a new password and view it.
                       </p>
                     </>
                   )}

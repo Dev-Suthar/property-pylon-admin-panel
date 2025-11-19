@@ -93,6 +93,18 @@ export const salesmanService = {
     }
   },
 
+  async resetPassword(id: string): Promise<{ password: string; message: string }> {
+    try {
+      const response = await apiClient.post<{ password: string; message: string }>(
+        `/admin/salesmen/${id}/reset-password`
+      );
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = handleApiError(error);
+      throw new Error(errorMessage);
+    }
+  },
+
   async getCompanies(salesmanId: string, params?: {
     page?: number;
     limit?: number;
