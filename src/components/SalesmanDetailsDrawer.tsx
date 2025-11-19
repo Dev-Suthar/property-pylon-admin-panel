@@ -161,8 +161,8 @@ export function SalesmanDetailsDrawer({
                 </div>
               )}
 
-              <div className="flex items-start gap-3">
-                <Key className="h-4 w-4 text-slate-400 mt-1" />
+              <div className="flex items-center gap-3">
+                <Key className="h-4 w-4 text-slate-400" />
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm text-slate-500">Password</p>
@@ -182,41 +182,51 @@ export function SalesmanDetailsDrawer({
                         ) : (
                           <>
                             <RefreshCw className="h-3 w-3 mr-1" />
-                            Reset Password
+                            Reset
                           </>
                         )}
                       </Button>
                     )}
-                  </div>
-                  {displayedPassword ? (
-                    <div className="space-y-2">
+                    {displayedPassword && (
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-900 font-mono bg-slate-100 px-3 py-2 rounded flex-1">
-                          {displayedPassword}
-                        </p>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleCopyPassword}
-                          className="h-8 w-8 p-0"
+                          className="h-7 text-xs"
                           title="Copy password"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => resetPasswordMutation.mutate()}
+                          disabled={resetPasswordMutation.isPending}
+                          className="h-7 text-xs"
+                        >
+                          {resetPasswordMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Resetting...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Reset
+                            </>
+                          )}
                         </Button>
                       </div>
-                      <p className="text-xs text-slate-400">
-                        This password is visible to super admin. Save it securely.
-                      </p>
-                    </div>
+                    )}
+                  </div>
+                  {displayedPassword ? (
+                    <p className="font-medium text-slate-900 font-mono">{displayedPassword}</p>
                   ) : (
-                    <>
-                      <p className="font-medium text-slate-600 italic">
-                        Password is set (hidden for security)
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Click "Reset Password" to generate a new password and view it.
-                      </p>
-                    </>
+                    <p className="font-medium text-slate-600 italic">
+                      Password is set (hidden for security)
+                    </p>
                   )}
                 </div>
               </div>
