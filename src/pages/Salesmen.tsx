@@ -164,13 +164,16 @@ export function Salesmen() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       salesmanService.update(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['salesmen'] });
       setIsEditDialogOpen(false);
       setEditingSalesman(null);
       toast({
         title: 'Success',
-        description: 'Salesman updated successfully',
+        description: data.password 
+          ? `Salesman updated successfully. New password: ${data.password}`
+          : 'Salesman updated successfully',
+        duration: data.password ? 10000 : 5000,
       });
     },
     onError: (error: Error) => {

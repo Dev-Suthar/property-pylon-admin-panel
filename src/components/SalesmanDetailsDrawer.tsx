@@ -54,6 +54,12 @@ export function SalesmanDetailsDrawer({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const { data: salesmanData, refetch: refetchSalesman } = useQuery({
+    queryKey: ['salesman', salesman?.id],
+    queryFn: () => salesmanService.getById(salesman!.id),
+    enabled: !!salesman?.id && open,
+  });
+
   const { data: companiesData, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['salesman-companies', salesman?.id, companiesPage, limit],
     queryFn: () =>
@@ -64,11 +70,15 @@ export function SalesmanDetailsDrawer({
     enabled: !!salesman?.id && open,
   });
 
+  // Use salesmanData if available, otherwise use prop
+  const currentSalesman = salesmanData || salesman;
+
   const resetPasswordMutation = useMutation({
-    mutationFn: () => salesmanService.resetPassword(salesman!.id),
+    mutationFn: () => salesmanService.resetPassword(currentSalesman!.id),
     onSuccess: (data) => {
       setDisplayedPassword(data.password);
       queryClient.invalidateQueries({ queryKey: ['salesmen'] });
+      refetchSalesman(); // Refetch to get updated data
       toast({
         title: 'Password Reset',
         description: 'Password has been reset successfully. New password is displayed below.',
@@ -97,17 +107,24 @@ export function SalesmanDetailsDrawer({
 
   // Update displayed password when salesman changes
   useEffect(() => {
-    if (salesman?.password) {
-      setDisplayedPassword(salesman.password);
+    if (currentSalesman?.password) {
+      setDisplayedPassword(currentSalesman.password);
     } else {
       setDisplayedPassword(null);
     }
-  }, [salesman?.password]);
+  }, [currentSalesman?.password]);
 
-  if (!salesman) return null;
+  // Refetch salesman data when drawer opens
+  useEffect(() => {
+    if (open && salesman?.id) {
+      refetchSalesman();
+    }
+  }, [open, salesman?.id, refetchSalesman]);
 
-  const companies = companiesData?.companies || salesman.companies || [];
-  const totalCompanies = companiesData?.total || salesman.companies_count || 0;
+  if (!currentSalesman) return null;
+
+  const companies = companiesData?.companies || currentSalesman.companies || [];
+  const totalCompanies = companiesData?.total || currentSalesman.companies_count || 0;
   const totalPages = Math.ceil(totalCompanies / limit);
 
   return (
@@ -133,13 +150,13 @@ export function SalesmanDetailsDrawer({
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <p className="text-sm text-slate-500 mb-1">Name</p>
-                  <p className="font-medium text-slate-900">{salesman.name}</p>
+                  <p className="font-medium text-slate-900">{currentSalesman.name}</p>
                 </div>
                 <Badge
-                  variant={salesman.is_active ? 'success' : 'secondary'}
+                  variant={currentSalesman.is_active ? 'success' : 'secondary'}
                   className="shrink-0"
                 >
-                  {salesman.is_active ? 'Active' : 'Inactive'}
+                  {currentSalesman.is_active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
 
@@ -147,16 +164,16 @@ export function SalesmanDetailsDrawer({
                 <Mail className="h-4 w-4 text-slate-400" />
                 <div className="flex-1">
                   <p className="text-sm text-slate-500 mb-1">Email</p>
-                  <p className="font-medium text-slate-900">{salesman.email}</p>
+                  <p className="font-medium text-slate-900">{currentSalesman.email}</p>
                 </div>
               </div>
 
-              {salesman.phone && (
+              {currentSalesman.phone && (
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-slate-400" />
                   <div className="flex-1">
                     <p className="text-sm text-slate-500 mb-1">Phone</p>
-                    <p className="font-medium text-slate-900">{salesman.phone}</p>
+                    <p className="font-medium text-slate-900">{currentSalesman.phone}</p>
                   </div>
                 </div>
               )}
@@ -166,7 +183,19 @@ export function SalesmanDetailsDrawer({
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm text-slate-500">Password</p>
-                    {!displayedPassword && (
+                    <div className="flex items-center gap-2">
+                      {displayedPassword && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyPassword}
+                          className="h-7 text-xs"
+                          title="Copy password"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -186,47 +215,12 @@ export function SalesmanDetailsDrawer({
                           </>
                         )}
                       </Button>
-                    )}
-                    {displayedPassword && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCopyPassword}
-                          className="h-7 text-xs"
-                          title="Copy password"
-                        >
-                          <Copy className="h-3 w-3 mr-1" />
-                          Copy
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => resetPasswordMutation.mutate()}
-                          disabled={resetPasswordMutation.isPending}
-                          className="h-7 text-xs"
-                        >
-                          {resetPasswordMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Resetting...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Reset
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
+                    </div>
                   </div>
                   {displayedPassword ? (
                     <p className="font-medium text-slate-900 font-mono">{displayedPassword}</p>
                   ) : (
-                    <p className="font-medium text-slate-600 italic">
-                      Password is set (hidden for security)
-                    </p>
+                    <p className="font-medium text-slate-900">-</p>
                   )}
                 </div>
               </div>
@@ -236,7 +230,7 @@ export function SalesmanDetailsDrawer({
                 <div className="flex-1">
                   <p className="text-sm text-slate-500 mb-1">Created At</p>
                   <p className="font-medium text-slate-900">
-                    {new Date(salesman.created_at).toLocaleString('en-GB', {
+                    {new Date(currentSalesman.created_at).toLocaleString('en-GB', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
@@ -247,13 +241,13 @@ export function SalesmanDetailsDrawer({
                 </div>
               </div>
 
-              {salesman.last_login && (
+              {currentSalesman.last_login && (
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="h-4 w-4 text-slate-400" />
                   <div className="flex-1">
                     <p className="text-sm text-slate-500 mb-1">Last Login</p>
                     <p className="font-medium text-slate-900">
-                      {new Date(salesman.last_login).toLocaleString('en-GB', {
+                      {new Date(currentSalesman.last_login).toLocaleString('en-GB', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
