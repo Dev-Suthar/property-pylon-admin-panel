@@ -14,6 +14,7 @@ import { Subscriptions } from './pages/Subscriptions';
 import { Activity } from './pages/Activity';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { Salesmen } from './pages/Salesmen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +129,16 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Settings />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/salesmen"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Salesmen />
                   </MainLayout>
                 </ProtectedRoute>
               }

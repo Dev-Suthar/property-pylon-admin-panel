@@ -7,6 +7,7 @@ import {
   FileText,
   Activity,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Building2, label: 'Companies', path: '/companies' },
+  { icon: UserCog, label: 'Salesmen', path: '/salesmen' },
   { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
   { icon: Activity, label: 'Activity Logs', path: '/activity' },
   { icon: FileText, label: 'Reports', path: '/reports' },
