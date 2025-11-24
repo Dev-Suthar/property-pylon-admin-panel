@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -46,6 +47,7 @@ export function SalesmanDetailsDrawer({
   open,
   onOpenChange,
 }: SalesmanDetailsDrawerProps) {
+  const navigate = useNavigate();
   const [companiesPage, setCompaniesPage] = useState(1);
   const [displayedPassword, setDisplayedPassword] = useState<string | null>(
     salesman?.password || null
@@ -306,8 +308,18 @@ export function SalesmanDetailsDrawer({
                       </TableHeader>
                       <TableBody>
                         {companies.map((company) => (
-                          <TableRow key={company.id} className="hover:bg-slate-50">
-                            <TableCell className="font-medium text-slate-900">
+                          <TableRow 
+                            key={company.id} 
+                            className="hover:bg-slate-50"
+                          >
+                            <TableCell 
+                              className="font-medium text-slate-900 hover:text-blue-600 transition-colors cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/companies?id=${company.id}`);
+                                onOpenChange(false);
+                              }}
+                            >
                               {company.name}
                             </TableCell>
                             <TableCell className="text-slate-600 hidden md:table-cell">

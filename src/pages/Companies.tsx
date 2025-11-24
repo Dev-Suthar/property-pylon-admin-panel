@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +140,7 @@ type SortDirection = "asc" | "desc" | null;
 type ViewMode = "table" | "grid";
 
 export function Companies() {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -174,6 +176,35 @@ export function Companies() {
     });
     return Array.from(uniqueMap.values());
   }, [data?.companies, error]);
+
+  // Handle URL query parameter to open company details drawer
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const companyId = searchParams.get("id");
+    
+    if (companyId) {
+      // First try to find in current companies list
+      const company = companies.find((c) => c.id === companyId);
+      if (company) {
+        setSelectedCompany(company);
+        setIsDrawerOpen(true);
+        // Clean up URL by removing the query parameter
+        window.history.replaceState({}, "", location.pathname);
+      } else if (!isLoading && data) {
+        // If company not found in current page and data is loaded, try to fetch it
+        companyService.getById(companyId)
+          .then((companyDetails) => {
+            // CompanyDetails extends Company, so it's compatible
+            setSelectedCompany(companyDetails as Company);
+            setIsDrawerOpen(true);
+            window.history.replaceState({}, "", location.pathname);
+          })
+          .catch(() => {
+            // Company not found, ignore
+          });
+      }
+    }
+  }, [location.search, companies, isLoading, data]);
 
   // Sort companies
   const sortedCompanies = useMemo(() => {

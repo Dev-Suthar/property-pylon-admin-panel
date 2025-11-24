@@ -72,9 +72,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { propertyService, Property, CreatePropertyData } from "@/services/propertyService";
+import { customerService } from "@/services/customerService";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyDetailsDrawer } from "@/components/PropertyDetailsDrawer";
 import { formatPriceWithCurrency } from "@/utils/priceUtils";
+import { User } from "lucide-react";
 
 // Mock data fallback
 const mockProperties: Property[] = [
@@ -154,6 +156,7 @@ export function Properties() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dealStatusFilter, setDealStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [priceMinFilter, setPriceMinFilter] = useState<string>("");
   const [priceMaxFilter, setPriceMaxFilter] = useState<string>("");
@@ -166,12 +169,15 @@ export function Properties() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [dealStatus, setDealStatus] = useState<string>("OPEN");
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>("");
+  const [previousDealStatus, setPreviousDealStatus] = useState<string>("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const limit = 10;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["properties", page, limit, searchQuery, statusFilter, typeFilter, priceMinFilter, priceMaxFilter],
+    queryKey: ["properties", page, limit, searchQuery, statusFilter, dealStatusFilter, typeFilter, priceMinFilter, priceMaxFilter],
     queryFn: () =>
       propertyService.getAll({
         page,
@@ -186,6 +192,28 @@ export function Properties() {
     placeholderData: (previousData) => previousData,
   });
 
+  // Fetch customers for buyer selection (when editing and status is Dealing)
+  // Note: For create dialog, buyer selection may not be available until company is selected
+  const { data: customersData } = useQuery({
+    queryKey: ["customers-for-buyer", selectedProperty?.company_id],
+    queryFn: () =>
+      customerService.getAll({
+        page: 1,
+        limit: 1000,
+        company_id: selectedProperty?.company_id,
+        type: "buyer",
+      }),
+    enabled: !!selectedProperty?.company_id && isEditDialogOpen,
+    retry: false,
+  });
+
+  const availableBuyers = useMemo(() => {
+    if (!customersData?.customers) return [];
+    return customersData.customers.filter(
+      (customer) => customer.type === "buyer" || customer.type === "both"
+    );
+  }, [customersData]);
+
   const properties = useMemo(() => {
     const rawProperties = data?.properties || (error ? mockProperties : []);
     const uniqueMap = new Map();
@@ -197,9 +225,17 @@ export function Properties() {
     return Array.from(uniqueMap.values());
   }, [data?.properties, error]);
 
+  const filteredProperties = useMemo(() => {
+    if (dealStatusFilter === "all") return properties;
+    return properties.filter((property) => {
+      const pipelineStatus = property.pipeline_status?.toUpperCase() || "OPEN";
+      return pipelineStatus === dealStatusFilter.toUpperCase();
+    });
+  }, [properties, dealStatusFilter]);
+
   const sortedProperties = useMemo(() => {
-    if (!sortField) return properties;
-    return [...properties].sort((a, b) => {
+    if (!sortField) return filteredProperties;
+    return [...filteredProperties].sort((a, b) => {
       let aValue: any = a[sortField as keyof Property];
       let bValue: any = b[sortField as keyof Property];
       if (sortField === "created_at" || sortField === "price") {
@@ -213,7 +249,7 @@ export function Properties() {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [properties, sortField, sortDirection]);
+  }, [filteredProperties, sortField, sortDirection]);
 
   const paginatedProperties = useMemo(() => {
     const start = (page - 1) * limit;
@@ -354,11 +390,16 @@ export function Properties() {
   });
 
   const handleCreate = (formData: FormData) => {
+    const pipelineStatus = (formData.get("pipeline_status") as string) || "OPEN";
+    const buyerId = formData.get("buyer_id") as string;
+    
     const data: CreatePropertyData = {
       title: formData.get("title") as string,
       description: formData.get("description") as string || undefined,
       property_type: formData.get("property_type") as string,
       status: (formData.get("status") as string) || "available",
+      pipeline_status: pipelineStatus,
+      buyer_id: pipelineStatus === "DEALING" && buyerId ? buyerId : undefined,
       price: formData.get("price") ? parseFloat(formData.get("price") as string) : undefined,
       address: formData.get("address") as string || undefined,
       city: formData.get("city") as string || undefined,
@@ -373,11 +414,32 @@ export function Properties() {
 
   const handleUpdate = (formData: FormData) => {
     if (!selectedProperty) return;
+    
+    const pipelineStatus = (formData.get("pipeline_status") as string) || selectedProperty.pipeline_status || "OPEN";
+    const buyerId = formData.get("buyer_id") as string;
+    const oldPipelineStatus = previousDealStatus || selectedProperty.pipeline_status || "OPEN";
+    
+    // Buyer removal logic: if changing from Cancelled to Open, remove buyer
+    let finalBuyerId: string | null | undefined = selectedProperty.buyer_id;
+    
+    if (oldPipelineStatus === "CANCELLED" && pipelineStatus === "OPEN") {
+      // Remove buyer when changing from Cancelled to Open
+      finalBuyerId = null;
+    } else if (pipelineStatus === "DEALING") {
+      // Set buyer if status is Dealing
+      finalBuyerId = buyerId || selectedProperty.buyer_id || undefined;
+    } else if (pipelineStatus !== "DEALING") {
+      // Clear buyer if status is not Dealing
+      finalBuyerId = null;
+    }
+    
     const data: Partial<CreatePropertyData> = {
       title: formData.get("title") as string,
       description: formData.get("description") as string || undefined,
       property_type: formData.get("property_type") as string,
       status: formData.get("status") as string,
+      pipeline_status: pipelineStatus,
+      buyer_id: finalBuyerId,
       price: formData.get("price") ? parseFloat(formData.get("price") as string) : undefined,
       address: formData.get("address") as string || undefined,
       city: formData.get("city") as string || undefined,
@@ -398,24 +460,60 @@ export function Properties() {
 
   const clearFilters = () => {
     setStatusFilter("all");
+    setDealStatusFilter("all");
     setTypeFilter("all");
     setPriceMinFilter("");
     setPriceMaxFilter("");
     setPage(1);
   };
 
-  const hasActiveFilters = statusFilter !== "all" || typeFilter !== "all" || priceMinFilter || priceMaxFilter;
+  const hasActiveFilters = statusFilter !== "all" || dealStatusFilter !== "all" || typeFilter !== "all" || priceMinFilter || priceMaxFilter;
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string, pipelineStatus?: string) => {
+    // Prioritize pipeline_status for deal status display
+    if (pipelineStatus) {
+      switch (pipelineStatus.toUpperCase()) {
+        case "OPEN":
+          return "success";
+        case "DEALING":
+          return "default";
+        case "CLOSED":
+          return "secondary";
+        case "CANCELLED":
+          return "destructive";
+        default:
+          return "secondary";
+      }
+    }
+    
+    // Fallback to status field
     switch (status.toLowerCase()) {
       case "available":
+      case "open":
         return "success";
       case "sold":
+      case "closed":
         return "secondary";
       case "rented":
         return "default";
       default:
         return "secondary";
+    }
+  };
+
+  const getDealStatusLabel = (pipelineStatus?: string) => {
+    if (!pipelineStatus) return "Open";
+    switch (pipelineStatus.toUpperCase()) {
+      case "OPEN":
+        return "Open";
+      case "DEALING":
+        return "Dealing";
+      case "CLOSED":
+        return "Closed";
+      case "CANCELLED":
+        return "Cancelled";
+      default:
+        return pipelineStatus;
     }
   };
 
@@ -462,6 +560,18 @@ export function Properties() {
             <SelectItem value="available">Available</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
             <SelectItem value="rented">Rented</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={dealStatusFilter} onValueChange={setDealStatusFilter}>
+          <SelectTrigger className="w-[180px] h-10 rounded-xl border-slate-200 bg-white">
+            <SelectValue placeholder="Filter by deal status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Deal Status</SelectItem>
+            <SelectItem value="OPEN">Open</SelectItem>
+            <SelectItem value="DEALING">Dealing</SelectItem>
+            <SelectItem value="CLOSED">Closed</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -564,10 +674,10 @@ export function Properties() {
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
                 <Home className="h-16 w-16 text-blue-500/60 relative z-10 group-hover:scale-110 transition-transform duration-300" />
                 <Badge
-                  variant={getStatusBadgeVariant(property.status)}
+                  variant={getStatusBadgeVariant(property.status, property.pipeline_status)}
                   className="absolute top-3 right-3 capitalize shadow-lg z-10"
                 >
-                  {property.status}
+                  {property.pipeline_status ? getDealStatusLabel(property.pipeline_status) : property.status}
                 </Badge>
               </div>
 
@@ -597,6 +707,25 @@ export function Properties() {
                     </span>
                   </div>
                 </div>
+
+                {/* Buyer Information - Show when deal status is DEALING */}
+                {property.pipeline_status === "DEALING" && property.buyer && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className="h-4 w-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-slate-700">Buyer:</span>
+                    </div>
+                    <div className="pl-6 space-y-1">
+                      <p className="text-sm font-medium text-slate-900">{property.buyer.name}</p>
+                      {property.buyer.phone && (
+                        <p className="text-xs text-slate-600">{property.buyer.phone}</p>
+                      )}
+                      {property.buyer.email && (
+                        <p className="text-xs text-slate-600">{property.buyer.email}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-4 text-sm text-slate-600 pt-2">
                   {property.bedrooms !== undefined && (
@@ -656,6 +785,9 @@ export function Properties() {
                         onClick={(e: React.MouseEvent) => {
                           e.stopPropagation();
                           setSelectedProperty(property);
+                          setPreviousDealStatus(property.pipeline_status || "OPEN");
+                          setDealStatus(property.pipeline_status || "OPEN");
+                          setSelectedBuyerId(property.buyer_id || "");
                           setIsEditDialogOpen(true);
                         }}
                       >
@@ -717,7 +849,12 @@ export function Properties() {
                   </TableHead>
                   <TableHead className="sticky top-0 z-10 bg-white">
                     <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
-                      Status
+                      Deal Status
+                    </span>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-white hidden lg:table-cell">
+                    <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
+                      Buyer
                     </span>
                   </TableHead>
                   <TableHead className="sticky top-0 z-10 bg-white hidden xl:table-cell">
@@ -763,11 +900,26 @@ export function Properties() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={getStatusBadgeVariant(property.status)}
+                        variant={getStatusBadgeVariant(property.status, property.pipeline_status)}
                         className="font-medium px-2.5 py-0.5 text-xs min-w-[70px] justify-center capitalize"
                       >
-                        {property.status}
+                        {property.pipeline_status ? getDealStatusLabel(property.pipeline_status) : property.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm hidden lg:table-cell">
+                      {property.pipeline_status === "DEALING" && property.buyer ? (
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-slate-900 text-xs">{property.buyer.name}</p>
+                          {property.buyer.phone && (
+                            <p className="text-xs text-slate-600">{property.buyer.phone}</p>
+                          )}
+                          {property.buyer.email && (
+                            <p className="text-xs text-slate-600 truncate max-w-[150px]">{property.buyer.email}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-xs">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-gray-600 text-sm hidden xl:table-cell">
                       {formatDate(property.created_at)}
@@ -809,6 +961,9 @@ export function Properties() {
                               onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 setSelectedProperty(property);
+                                setPreviousDealStatus(property.pipeline_status || "OPEN");
+                                setDealStatus(property.pipeline_status || "OPEN");
+                                setSelectedBuyerId(property.buyer_id || "");
                                 setIsEditDialogOpen(true);
                               }}
                             >
@@ -942,7 +1097,16 @@ export function Properties() {
       />
 
       {/* Create Property Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) {
+            setDealStatus("OPEN");
+            setSelectedBuyerId("");
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Property</DialogTitle>
@@ -996,10 +1160,57 @@ export function Properties() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="pipeline_status">Deal Status *</Label>
+                  <Select 
+                    name="pipeline_status" 
+                    defaultValue="OPEN"
+                    value={dealStatus}
+                    onValueChange={(value) => {
+                      setDealStatus(value);
+                      if (value !== "DEALING") {
+                        setSelectedBuyerId("");
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="OPEN">Open (Default)</SelectItem>
+                      <SelectItem value="DEALING">Dealing (Deal Started)</SelectItem>
+                      <SelectItem value="CLOSED">Closed</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="price">Price</Label>
                   <Input id="price" name="price" type="number" />
                 </div>
               </div>
+              {dealStatus === "DEALING" && (
+                <div className="space-y-2">
+                  <Label htmlFor="buyer_id">Buyer</Label>
+                  <Select 
+                    name="buyer_id" 
+                    value={selectedBuyerId}
+                    onValueChange={setSelectedBuyerId}
+                    disabled={true}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Buyer selection available after property creation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="" disabled>Buyer selection available after property creation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500">
+                    Note: Buyer can be selected after creating the property and assigning it to a company
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
@@ -1053,7 +1264,18 @@ export function Properties() {
       </Dialog>
 
       {/* Edit Property Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setSelectedProperty(null);
+            setPreviousDealStatus("");
+            setDealStatus("OPEN");
+            setSelectedBuyerId("");
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Property</DialogTitle>
@@ -1108,10 +1330,63 @@ export function Properties() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="edit-pipeline_status">Deal Status *</Label>
+                    <Select 
+                      name="pipeline_status" 
+                      value={dealStatus}
+                      onValueChange={(value) => {
+                        setDealStatus(value);
+                        if (value !== "DEALING") {
+                          setSelectedBuyerId("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEN">Open (Default)</SelectItem>
+                        <SelectItem value="DEALING">Dealing (Deal Started)</SelectItem>
+                        <SelectItem value="CLOSED">Closed</SelectItem>
+                        <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="edit-price">Price</Label>
                     <Input id="edit-price" name="price" type="number" defaultValue={selectedProperty.price?.toString() || ""} />
                   </div>
                 </div>
+                {dealStatus === "DEALING" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-buyer_id">Buyer *</Label>
+                    <Select 
+                      name="buyer_id" 
+                      value={selectedBuyerId}
+                      onValueChange={setSelectedBuyerId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a buyer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableBuyers.length > 0 ? (
+                          availableBuyers.map((buyer) => (
+                            <SelectItem key={buyer.id} value={buyer.id}>
+                              {buyer.name} {buyer.phone ? `(${buyer.phone})` : ""}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>No buyers available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500">
+                      Select the primary buyer for this property deal
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-address">Address</Label>

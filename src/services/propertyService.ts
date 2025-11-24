@@ -16,6 +16,13 @@ export interface Property {
   property_type: string;
   status: string;
   pipeline_status?: string;
+  buyer_id?: string;
+  buyer?: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+  };
   price?: number;
   address?: string;
   city?: string;
@@ -58,6 +65,8 @@ export interface CreatePropertyData {
   description?: string;
   property_type: string;
   status: string;
+  pipeline_status?: string;
+  buyer_id?: string | null;
   price?: number;
   address?: string;
   city?: string;

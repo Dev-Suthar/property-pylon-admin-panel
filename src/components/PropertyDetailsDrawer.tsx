@@ -115,7 +115,24 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
     return formatPriceWithCurrency(amount, true); // Use converter format (K, L, Cr)
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: string, pipelineStatus?: string) => {
+    // Prioritize pipeline_status for deal status display
+    if (pipelineStatus) {
+      switch (pipelineStatus.toUpperCase()) {
+        case "OPEN":
+          return "success";
+        case "DEALING":
+          return "default";
+        case "CLOSED":
+          return "secondary";
+        case "CANCELLED":
+          return "destructive";
+        default:
+          return "secondary";
+      }
+    }
+    
+    // Fallback to status field
     switch (status.toLowerCase()) {
       case "available":
       case "open":
@@ -127,6 +144,22 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
         return "default";
       default:
         return "secondary";
+    }
+  };
+
+  const getDealStatusLabel = (pipelineStatus?: string) => {
+    if (!pipelineStatus) return "Open";
+    switch (pipelineStatus.toUpperCase()) {
+      case "OPEN":
+        return "Open";
+      case "DEALING":
+        return "Dealing";
+      case "CLOSED":
+        return "Closed";
+      case "CANCELLED":
+        return "Cancelled";
+      default:
+        return pipelineStatus;
     }
   };
 
@@ -199,10 +232,10 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                 </div>
               </div>
               <Badge
-                variant={getStatusBadgeVariant(displayProperty.status)}
+                variant={getStatusBadgeVariant(displayProperty.status, displayProperty.pipeline_status)}
                 className="capitalize"
               >
-                {displayProperty.status}
+                {displayProperty.pipeline_status ? getDealStatusLabel(displayProperty.pipeline_status) : displayProperty.status}
               </Badge>
             </div>
           </DrawerHeader>
@@ -542,6 +575,55 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                               className="text-sm text-primary hover:underline"
                             >
                               {displayProperty.owner_email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Buyer Information - Show when deal status is DEALING */}
+                {displayProperty.pipeline_status === "DEALING" && displayProperty.buyer && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Primary Buyer</CardTitle>
+                      <CardDescription>
+                        Buyer for this property deal
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Name</p>
+                          <p className="text-sm text-muted-foreground">{displayProperty.buyer.name}</p>
+                        </div>
+                      </div>
+                      {displayProperty.buyer.phone && (
+                        <div className="flex items-start gap-3">
+                          <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Phone</p>
+                            <a
+                              href={`tel:${displayProperty.buyer.phone}`}
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {displayProperty.buyer.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      {displayProperty.buyer.email && (
+                        <div className="flex items-start gap-3">
+                          <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Email</p>
+                            <a
+                              href={`mailto:${displayProperty.buyer.email}`}
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {displayProperty.buyer.email}
                             </a>
                           </div>
                         </div>
