@@ -8,6 +8,8 @@ import {
   Activity,
   LogOut,
   UserCog,
+  Bell,
+  FileCode2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +19,8 @@ const menuItems = [
   { icon: Building2, label: 'Companies', path: '/companies' },
   { icon: UserCog, label: 'Salesmen', path: '/salesmen' },
   { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
+  { icon: Bell, label: 'Push Notifications', path: '/push-notifications' },
+  { icon: FileCode2, label: 'Notification Templates', path: '/notification-templates' },
   { icon: Activity, label: 'Activity Logs', path: '/activity' },
   { icon: FileText, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },

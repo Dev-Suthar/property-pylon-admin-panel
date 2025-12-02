@@ -46,6 +46,7 @@ import {
   X,
   Star,
   TrendingUp,
+  Bell,
 } from "lucide-react";
 import {
   companyService,
@@ -92,6 +93,11 @@ import { useToast } from "@/hooks/use-toast";
 import {
   formatPriceWithCurrency,
 } from "@/utils/priceUtils";
+import { NotificationStatsCards } from "@/components/NotificationStatsCards";
+import { SendNotificationForm } from "@/components/SendNotificationForm";
+import { NotificationHistoryTable } from "@/components/NotificationHistoryTable";
+import { FCMTokenManagement } from "@/components/FCMTokenManagement";
+import { notificationService } from "@/services/notificationService";
 
 interface CompanyDetailsDrawerProps {
   company: Company | null;
@@ -335,6 +341,14 @@ export function CompanyDetailsDrawer({
       return propertyService.getAll(params);
     },
     enabled: !!company?.id && open,
+    retry: false,
+  });
+
+  // Fetch notification stats
+  const { data: notificationStats } = useQuery({
+    queryKey: ['notification-stats', company?.id],
+    queryFn: () => notificationService.getStats(company?.id),
+    enabled: !!company?.id && open && activeTab === 'notifications',
     retry: false,
   });
 
@@ -962,7 +976,7 @@ export function CompanyDetailsDrawer({
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-4 mb-6 bg-slate-100 rounded-xl p-1">
+                <TabsList className="grid w-full grid-cols-5 mb-6 bg-slate-100 rounded-xl p-1">
                   <TabsTrigger
                     value="overview"
                     className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -986,6 +1000,13 @@ export function CompanyDetailsDrawer({
                     className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
                   >
                     Customers ({customers.length})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notifications"
+                    className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  >
+                    <Bell className="h-4 w-4 mr-1" />
+                    Notifications
                   </TabsTrigger>
                 </TabsList>
 
@@ -1826,6 +1847,30 @@ export function CompanyDetailsDrawer({
                         </Table>
                       </div>
                     </div>
+                  )}
+                </TabsContent>
+
+                {/* Push Notifications Tab */}
+                <TabsContent value="notifications" className="space-y-6">
+                  {company && (
+                    <>
+                      {/* Stats */}
+                      <NotificationStatsSection companyId={company.id} />
+
+                      {/* Send Notification */}
+                      <SendNotificationForm
+                        companyId={company.id}
+                        onSuccess={() => {
+                          queryClient.invalidateQueries({ queryKey: ['notification-stats', company.id] });
+                        }}
+                      />
+
+                      {/* History */}
+                      <NotificationHistoryTable companyId={company.id} />
+
+                      {/* FCM Tokens */}
+                      <FCMTokenManagement companyId={company.id} />
+                    </>
                   )}
                 </TabsContent>
               </Tabs>

@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Drawer,
   DrawerContent,
@@ -10,6 +11,25 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loading } from '@/components/ui/loading';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import {
   UsersRound,
   Mail,
@@ -29,7 +49,10 @@ import {
 } from 'lucide-react';
 import { formatPriceWithCurrency } from '@/utils/priceUtils';
 import { customerDetailsService, CustomerDetails, SuggestedProperty } from '@/services/customerService';
+import { Property } from '@/services/propertyService';
+import { PropertyDetailsDrawer } from '@/components/PropertyDetailsDrawer';
 import { format } from 'date-fns';
+import { Plus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -46,6 +69,13 @@ interface CustomerDetailsDrawerProps {
 }
 
 export function CustomerDetailsDrawer({ customer, open, onOpenChange }: CustomerDetailsDrawerProps) {
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [isPropertyDrawerOpen, setIsPropertyDrawerOpen] = useState(false);
+  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState('');
+  const [noteType, setNoteType] = useState<'general' | 'issue' | 'positive'>('general');
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: customerDetails, isLoading, error } = useQuery({
     queryKey: ['customer-details', customer?.id],
@@ -77,6 +107,46 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
     enabled: !!customer?.id && open,
     retry: false,
   });
+
+  // Create note mutation
+  const createNoteMutation = useMutation({
+    mutationFn: (data: { content: string; type: 'general' | 'issue' | 'positive' }) => {
+      if (!customer?.id) throw new Error('Customer ID is required');
+      return customerDetailsService.createCustomerNote(customer.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-notes', customer?.id] });
+      setIsAddNoteModalOpen(false);
+      setNoteContent('');
+      setNoteType('general');
+      toast({
+        title: 'Success',
+        description: 'Note added successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add note',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleAddNote = () => {
+    if (!noteContent.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter note content',
+        variant: 'destructive',
+      });
+      return;
+    }
+    createNoteMutation.mutate({
+      content: noteContent.trim(),
+      type: noteType,
+    });
+  };
 
   if (!customer) return null;
 
@@ -344,7 +414,18 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 {/* Notes */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-slate-900">Notes ({notes.length})</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg font-semibold text-slate-900">Notes ({notes.length})</CardTitle>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsAddNoteModalOpen(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Note
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {notesLoading ? (
@@ -487,6 +568,10 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                                 <TableRow
                                   key={item.property.id}
                                   className="cursor-pointer hover:bg-slate-50"
+                                  onClick={() => {
+                                    setSelectedProperty(item.property);
+                                    setIsPropertyDrawerOpen(true);
+                                  }}
                                 >
                                   <TableCell className="font-medium">{item.property.title}</TableCell>
                                   <TableCell className="text-slate-600">
@@ -553,6 +638,70 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
           </div>
         </div>
       </DrawerContent>
+
+      {/* Property Details Drawer */}
+      <PropertyDetailsDrawer
+        property={selectedProperty}
+        open={isPropertyDrawerOpen}
+        onOpenChange={setIsPropertyDrawerOpen}
+      />
+
+      {/* Add Note Modal */}
+      <Sheet open={isAddNoteModalOpen} onOpenChange={setIsAddNoteModalOpen}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto z-[60]">
+          <SheetHeader>
+            <SheetTitle>Add Note</SheetTitle>
+            <SheetDescription>
+              Add a note for this customer. Notes help track important information and interactions.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="note-type">Note Type</Label>
+              <Select value={noteType} onValueChange={(value: 'general' | 'issue' | 'positive') => setNoteType(value)}>
+                <SelectTrigger id="note-type">
+                  <SelectValue placeholder="Select note type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="positive">Positive</SelectItem>
+                  <SelectItem value="issue">Issue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note-content">Content</Label>
+              <Textarea
+                id="note-content"
+                placeholder="Enter note content..."
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                rows={5}
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <SheetFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddNoteModalOpen(false);
+                setNoteContent('');
+                setNoteType('general');
+              }}
+              disabled={createNoteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddNote}
+              disabled={createNoteMutation.isPending || !noteContent.trim()}
+            >
+              {createNoteMutation.isPending ? 'Saving...' : 'Save Note'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </Drawer>
   );
 }

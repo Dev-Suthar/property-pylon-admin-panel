@@ -11,6 +11,8 @@ import { Users } from './pages/Users';
 import { Properties } from './pages/Properties';
 import { Customers } from './pages/Customers';
 import { Subscriptions } from './pages/Subscriptions';
+import { PushNotifications } from './pages/PushNotifications';
+import { NotificationTemplates } from './pages/NotificationTemplates';
 import { Activity } from './pages/Activity';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
@@ -99,6 +101,26 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Subscriptions />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notification-templates"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <NotificationTemplates />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/push-notifications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PushNotifications />
                   </MainLayout>
                 </ProtectedRoute>
               }

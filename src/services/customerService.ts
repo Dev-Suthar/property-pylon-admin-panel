@@ -1,5 +1,5 @@
 import { apiClient, handleApiError } from '@/lib/api';
-import { NotesResponse } from './noteService';
+import { NotesResponse, Note } from './noteService';
 import { ActivitiesResponse } from './activityService';
 
 export interface Customer {
@@ -207,6 +207,19 @@ export const customerDetailsService = {
   }): Promise<NotesResponse> {
     try {
       const response = await apiClient.get<NotesResponse>(`/admin/customers/${customerId}/notes`, { params });
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  async createCustomerNote(customerId: string, data: {
+    content: string;
+    type: 'general' | 'issue' | 'positive';
+    property_id?: string;
+  }): Promise<Note> {
+    try {
+      const response = await apiClient.post<Note>(`/admin/customers/${customerId}/notes`, data);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));

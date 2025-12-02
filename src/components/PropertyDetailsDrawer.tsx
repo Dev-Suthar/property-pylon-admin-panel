@@ -101,6 +101,46 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
     retry: false,
   });
 
+  // Get media from property details (before early return to use in useEffect)
+  const allMedia: MediaItem[] = (propertyDetails as any)?.media || [];
+  const images: MediaItem[] = (propertyDetails as any)?.images || [];
+  const videos: MediaItem[] = (propertyDetails as any)?.videos || [];
+  const floorPlans: MediaItem[] = (propertyDetails as any)?.floor_plans || [];
+  const documents: MediaItem[] = (propertyDetails as any)?.documents || [];
+
+  // Filter media based on selected type
+  const getFilteredMedia = () => {
+    switch (selectedMediaType) {
+      case 'images':
+        return images;
+      case 'videos':
+        return videos;
+      case 'floor_plans':
+        return floorPlans;
+      case 'documents':
+        return documents;
+      default:
+        return allMedia;
+    }
+  };
+
+  const filteredMedia = getFilteredMedia();
+
+  // Reset currentImageIndex when filteredMedia changes or becomes empty
+  // This hook must be called before any early returns to follow Rules of Hooks
+  useEffect(() => {
+    if (filteredMedia.length === 0) {
+      setCurrentImageIndex(0);
+    } else {
+      setCurrentImageIndex((prevIndex) => {
+        if (prevIndex >= filteredMedia.length) {
+          return 0;
+        }
+        return prevIndex;
+      });
+    }
+  }, [filteredMedia.length, selectedMediaType]);
+
   const displayProperty = propertyDetails || property;
 
   if (!displayProperty) return null;
@@ -163,40 +203,7 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
     }
   };
 
-  // Get media from property details
-  const allMedia: MediaItem[] = (propertyDetails as any)?.media || [];
-  const images: MediaItem[] = (propertyDetails as any)?.images || [];
-  const videos: MediaItem[] = (propertyDetails as any)?.videos || [];
-  const floorPlans: MediaItem[] = (propertyDetails as any)?.floor_plans || [];
-  const documents: MediaItem[] = (propertyDetails as any)?.documents || [];
-
-  // Filter media based on selected type
-  const getFilteredMedia = () => {
-    switch (selectedMediaType) {
-      case 'images':
-        return images;
-      case 'videos':
-        return videos;
-      case 'floor_plans':
-        return floorPlans;
-      case 'documents':
-        return documents;
-      default:
-        return allMedia;
-    }
-  };
-
-  const filteredMedia = getFilteredMedia();
   const hasMedia = allMedia.length > 0;
-
-  // Reset currentImageIndex when filteredMedia changes or becomes empty
-  useEffect(() => {
-    if (filteredMedia.length === 0) {
-      setCurrentImageIndex(0);
-    } else if (currentImageIndex >= filteredMedia.length) {
-      setCurrentImageIndex(0);
-    }
-  }, [filteredMedia.length]);
 
   const handlePreviousImage = () => {
     if (filteredMedia.length === 0) return;
