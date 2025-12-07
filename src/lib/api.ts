@@ -1,21 +1,23 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { CONFIG } from './config';
 
 // Use relative API path when in production (HTTPS) to avoid mixed content issues
 // The .htaccess file will proxy /api/* requests to the backend server
 // For development, use the full API URL
 const getApiBaseUrl = () => {
+  // Check if VITE_API_URL is explicitly set (takes precedence)
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
   
   // In production (HTTPS), use relative path that goes through proxy
-  // In development, use direct API URL
+  // In development, use direct API URL from config
   if (import.meta.env.PROD && window.location.protocol === 'https:') {
     // Use relative path - .htaccess will proxy to backend
     return '/api';
   }
   
-  // Development or HTTP - use direct API URL
-  return 'http://98.92.75.163:3000/api/v1';
+  // Use configured API base URL
+  return CONFIG.API_BASE_URL;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -34,7 +36,7 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('admin_token');
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -49,8 +51,8 @@ class ApiClient {
       (error: AxiosError) => {
         if (error.response?.status === 401) {
           // Unauthorized - clear token and redirect to login
-          localStorage.removeItem('admin_token');
-          localStorage.removeItem('admin_user');
+          localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+          localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
           window.location.href = '/login';
         }
         return Promise.reject(error);

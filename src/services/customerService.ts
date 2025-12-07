@@ -1,6 +1,6 @@
-import { apiClient, handleApiError } from '@/lib/api';
-import { NotesResponse, Note } from './noteService';
-import { ActivitiesResponse } from './activityService';
+import { apiClient, handleApiError } from "@/lib/api";
+import { NotesResponse, Note } from "./noteService";
+import { ActivitiesResponse } from "./activityService";
 
 export interface Customer {
   id: string;
@@ -51,10 +51,13 @@ export const customerService = {
     budget_max?: number;
   }): Promise<CustomersResponse> {
     try {
-      const response = await apiClient.get<CustomersResponse>('/admin/customers', { params });
+      const response = await apiClient.get<CustomersResponse>(
+        "/admin/customers",
+        { params }
+      );
       return response.data;
     } catch (error) {
-      console.warn('Admin customers endpoint not available, using mock data');
+      console.warn("Admin customers endpoint not available, using mock data");
       throw new Error(handleApiError(error));
     }
   },
@@ -70,7 +73,7 @@ export const customerService = {
 
   async create(data: CreateCustomerData): Promise<Customer> {
     try {
-      const response = await apiClient.post<Customer>('/admin/customers', data);
+      const response = await apiClient.post<Customer>("/admin/customers", data);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -79,7 +82,10 @@ export const customerService = {
 
   async update(id: string, data: UpdateCustomerData): Promise<Customer> {
     try {
-      const response = await apiClient.put<Customer>(`/admin/customers/${id}`, data);
+      const response = await apiClient.put<Customer>(
+        `/admin/customers/${id}`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -95,18 +101,31 @@ export const customerService = {
   },
 
   // Company-scoped operations
-  async createForCompany(companyId: string, data: CreateCustomerData): Promise<Customer> {
+  async createForCompany(
+    companyId: string,
+    data: CreateCustomerData
+  ): Promise<Customer> {
     try {
-      const response = await apiClient.post<Customer>(`/admin/companies/${companyId}/customers`, data);
+      const response = await apiClient.post<Customer>(
+        `/admin/companies/${companyId}/customers`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async updateForCompany(companyId: string, customerId: string, data: UpdateCustomerData): Promise<Customer> {
+  async updateForCompany(
+    companyId: string,
+    customerId: string,
+    data: UpdateCustomerData
+  ): Promise<Customer> {
     try {
-      const response = await apiClient.put<Customer>(`/admin/companies/${companyId}/customers/${customerId}`, data);
+      const response = await apiClient.put<Customer>(
+        `/admin/companies/${companyId}/customers/${customerId}`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -115,7 +134,9 @@ export const customerService = {
 
   async deleteForCompany(companyId: string, customerId: string): Promise<void> {
     try {
-      await apiClient.delete(`/admin/companies/${companyId}/customers/${customerId}`);
+      await apiClient.delete(
+        `/admin/companies/${companyId}/customers/${customerId}`
+      );
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -124,7 +145,7 @@ export const customerService = {
 
 // Extended Customer interface for detailed view
 export interface CustomerDetails extends Customer {
-  type?: 'buyer' | 'owner' | 'both';
+  type?: "buyer" | "owner" | "both";
   address?: string;
   area?: string;
   city?: string;
@@ -193,58 +214,81 @@ export interface SuggestedPropertiesResponse {
 export const customerDetailsService = {
   async getById(id: string): Promise<CustomerDetails> {
     try {
-      const response = await apiClient.get<CustomerDetails>(`/admin/customers/${id}`);
+      const response = await apiClient.get<CustomerDetails>(
+        `/admin/customers/${id}`
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async getCustomerNotes(customerId: string, params?: {
-    page?: number;
-    limit?: number;
-    type?: string;
-  }): Promise<NotesResponse> {
+  async getCustomerNotes(
+    customerId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      type?: string;
+    }
+  ): Promise<NotesResponse> {
     try {
-      const response = await apiClient.get<NotesResponse>(`/admin/customers/${customerId}/notes`, { params });
+      const response = await apiClient.get<NotesResponse>(
+        `/admin/customers/${customerId}/notes`,
+        { params }
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async createCustomerNote(customerId: string, data: {
-    content: string;
-    type: 'general' | 'issue' | 'positive';
-    property_id?: string;
-  }): Promise<Note> {
+  async createCustomerNote(
+    customerId: string,
+    data: {
+      content: string;
+      type: "general" | "issue" | "positive";
+      property_id?: string;
+    }
+  ): Promise<Note> {
     try {
-      const response = await apiClient.post<Note>(`/admin/customers/${customerId}/notes`, data);
+      const response = await apiClient.post<Note>(
+        `/admin/customers/${customerId}/notes`,
+        data
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async getCustomerActivities(customerId: string, params?: {
-    page?: number;
-    limit?: number;
-  }): Promise<ActivitiesResponse> {
+  async getCustomerActivities(
+    customerId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<ActivitiesResponse> {
     try {
-      const response = await apiClient.get<ActivitiesResponse>(`/admin/customers/${customerId}/activities`, { params });
+      const response = await apiClient.get<ActivitiesResponse>(
+        `/admin/customers/${customerId}/activities`,
+        { params }
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async getCustomerSuggestedProperties(customerId: string): Promise<SuggestedPropertiesResponse> {
+  async getCustomerSuggestedProperties(
+    customerId: string
+  ): Promise<SuggestedPropertiesResponse> {
     try {
-      const response = await apiClient.get<SuggestedPropertiesResponse>(`/admin/customers/${customerId}/suggested-properties`);
+      const response = await apiClient.get<SuggestedPropertiesResponse>(
+        `/admin/customers/${customerId}/suggested-properties`
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 };
-

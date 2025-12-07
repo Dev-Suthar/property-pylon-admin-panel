@@ -90,9 +90,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import {
-  formatPriceWithCurrency,
-} from "@/utils/priceUtils";
+import { formatPriceWithCurrency } from "@/utils/priceUtils";
 import { NotificationStatsCards } from "@/components/NotificationStatsCards";
 import { SendNotificationForm } from "@/components/SendNotificationForm";
 import { NotificationHistoryTable } from "@/components/NotificationHistoryTable";
@@ -345,12 +343,13 @@ export function CompanyDetailsDrawer({
   });
 
   // Fetch notification stats
-  const { data: notificationStats, isLoading: notificationStatsLoading } = useQuery({
-    queryKey: ['notification-stats', company?.id],
-    queryFn: () => notificationService.getStats(company?.id),
-    enabled: !!company?.id && open && activeTab === 'notifications',
-    retry: false,
-  });
+  const { data: notificationStats, isLoading: notificationStatsLoading } =
+    useQuery({
+      queryKey: ["notification-stats", company?.id],
+      queryFn: () => notificationService.getStats(company?.id),
+      enabled: !!company?.id && open && activeTab === "notifications",
+      retry: false,
+    });
 
   // Fetch company customers with filters
   const {
@@ -858,7 +857,10 @@ export function CompanyDetailsDrawer({
     // Area filter
     let matchesArea = true;
     if (propertyFilters.area && property.area) {
-      const area = typeof property.area === 'string' ? parseFloat(property.area) : property.area;
+      const area =
+        typeof property.area === "string"
+          ? parseFloat(property.area)
+          : property.area;
       const [min, max] = propertyFilters.area
         .split("-")
         .map((v) => v.replace("+", "").trim());
@@ -880,62 +882,73 @@ export function CompanyDetailsDrawer({
     );
   });
 
-  const filteredCustomers = customers.filter((customer: Customer & { type?: string; is_hot_lead?: boolean; preferred_localities?: string }) => {
-    const matchesSearch =
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      !customerFilters.status || customer.status === customerFilters.status;
-    const matchesType =
-      !customerFilters.type || customer.type === customerFilters.type;
-    const matchesBudgetMin =
-      !customerFilters.budget_min ||
-      (customer.budget_min &&
-        customer.budget_min >= parseFloat(customerFilters.budget_min));
-    const matchesBudgetMax =
-      !customerFilters.budget_max ||
-      (customer.budget_max &&
-        customer.budget_max <= parseFloat(customerFilters.budget_max));
+  const filteredCustomers = customers.filter(
+    (
+      customer: Customer & {
+        type?: string;
+        is_hot_lead?: boolean;
+        preferred_localities?: string;
+      }
+    ) => {
+      const matchesSearch =
+        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customer.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        !customerFilters.status || customer.status === customerFilters.status;
+      const matchesType =
+        !customerFilters.type || customer.type === customerFilters.type;
+      const matchesBudgetMin =
+        !customerFilters.budget_min ||
+        (customer.budget_min &&
+          customer.budget_min >= parseFloat(customerFilters.budget_min));
+      const matchesBudgetMax =
+        !customerFilters.budget_max ||
+        (customer.budget_max &&
+          customer.budget_max <= parseFloat(customerFilters.budget_max));
 
-    // Hot lead filter
-    const matchesHotLead =
-      !customerFilters.hot_lead ||
-      (customerFilters.hot_lead === "yes" && customer.is_hot_lead) ||
-      (customerFilters.hot_lead === "no" && !customer.is_hot_lead);
+      // Hot lead filter
+      const matchesHotLead =
+        !customerFilters.hot_lead ||
+        (customerFilters.hot_lead === "yes" && customer.is_hot_lead) ||
+        (customerFilters.hot_lead === "no" && !customer.is_hot_lead);
 
-    // Preferred localities filter
-    const matchesLocalities =
-      !customerFilters.preferred_localities ||
-      (customer.preferred_localities &&
-        customer.preferred_localities
-          .toLowerCase()
-          .includes(customerFilters.preferred_localities.toLowerCase()));
+      // Preferred localities filter
+      const matchesLocalities =
+        !customerFilters.preferred_localities ||
+        (customer.preferred_localities &&
+          customer.preferred_localities
+            .toLowerCase()
+            .includes(customerFilters.preferred_localities.toLowerCase()));
 
-    // BHK, Area, Property Type filters would need to check customer preferences
-    // These are typically stored in customer preferences, so we'll skip for now
-    // but the structure is ready for when that data is available
+      // BHK, Area, Property Type filters would need to check customer preferences
+      // These are typically stored in customer preferences, so we'll skip for now
+      // but the structure is ready for when that data is available
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesType &&
-      matchesBudgetMin &&
-      matchesBudgetMax &&
-      matchesHotLead &&
-      matchesLocalities
-    );
-  });
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesType &&
+        matchesBudgetMin &&
+        matchesBudgetMax &&
+        matchesHotLead &&
+        matchesLocalities
+      );
+    }
+  );
 
   if (!company) return null;
 
-  const groupedUsers = filteredUsers.reduce((acc: Record<string, CompanyUser[]>, user: CompanyUser) => {
-    const role = user.role || "agent";
-    if (!acc[role]) {
-      acc[role] = [];
-    }
-    acc[role].push(user);
-    return acc;
-  }, {} as Record<string, CompanyUser[]>);
+  const groupedUsers = filteredUsers.reduce(
+    (acc: Record<string, CompanyUser[]>, user: CompanyUser) => {
+      const role = user.role || "agent";
+      if (!acc[role]) {
+        acc[role] = [];
+      }
+      acc[role].push(user);
+      return acc;
+    },
+    {} as Record<string, CompanyUser[]>
+  );
 
   const roleOrder = ["admin", "owner", "manager", "agent"];
 
@@ -1269,7 +1282,9 @@ export function CompanyDetailsDrawer({
                         <Input
                           placeholder="Search users..."
                           value={searchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setSearchQuery(e.target.value)
+                          }
                           className="pl-11 h-10 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                         />
                       </div>
@@ -1457,7 +1472,9 @@ export function CompanyDetailsDrawer({
                         <Input
                           placeholder="Search properties..."
                           value={searchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setSearchQuery(e.target.value)
+                          }
                           className="pl-11 h-10 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                         />
                       </div>
@@ -1613,7 +1630,9 @@ export function CompanyDetailsDrawer({
                                   <DropdownMenu>
                                     <DropdownMenuTrigger
                                       asChild
-                                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                      onClick={(e: React.MouseEvent) =>
+                                        e.stopPropagation()
+                                      }
                                     >
                                       <Button variant="ghost" size="icon">
                                         <MoreVertical className="h-4 w-4" />
@@ -1670,7 +1689,9 @@ export function CompanyDetailsDrawer({
                         <Input
                           placeholder="Search customers..."
                           value={searchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setSearchQuery(e.target.value)
+                          }
                           className="pl-11 h-10 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                         />
                       </div>
@@ -1759,90 +1780,100 @@ export function CompanyDetailsDrawer({
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredCustomers.map((customer: Customer & { type?: string; is_hot_lead?: boolean; preferred_localities?: string }) => (
-                              <TableRow
-                                key={customer.id}
-                                className="cursor-pointer hover:bg-slate-50"
-                                onClick={() => {
-                                  setSelectedCustomer(customer);
-                                  setIsCustomerDrawerOpen(true);
-                                }}
-                              >
-                                <TableCell className="font-medium">
-                                  {customer.name}
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell text-slate-600">
-                                  {customer.email || "N/A"}
-                                </TableCell>
-                                <TableCell className="hidden lg:table-cell text-slate-600">
-                                  {customer.phone || "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  {customer.budget_min && customer.budget_max
-                                    ? `${formatCurrency(
-                                        customer.budget_min
-                                      )} - ${formatCurrency(
-                                        customer.budget_max
-                                      )}`
-                                    : "N/A"}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      customer.status === "active"
-                                        ? "success"
-                                        : "secondary"
-                                    }
-                                    className="capitalize"
-                                  >
-                                    {customer.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell
-                                  className="text-right"
-                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            {filteredCustomers.map(
+                              (
+                                customer: Customer & {
+                                  type?: string;
+                                  is_hot_lead?: boolean;
+                                  preferred_localities?: string;
+                                }
+                              ) => (
+                                <TableRow
+                                  key={customer.id}
+                                  className="cursor-pointer hover:bg-slate-50"
+                                  onClick={() => {
+                                    setSelectedCustomer(customer);
+                                    setIsCustomerDrawerOpen(true);
+                                  }}
                                 >
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={(e: React.MouseEvent) => {
-                                          e.stopPropagation();
-                                          setSelectedCustomer(customer);
-                                          setIsCustomerDrawerOpen(true);
-                                        }}
-                                      >
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View Details
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={(e: React.MouseEvent) => {
-                                          e.stopPropagation();
-                                          handleEditCustomer(customer);
-                                        }}
-                                      >
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={(e: React.MouseEvent) => {
-                                          e.stopPropagation();
-                                          handleDeleteCustomer(customer);
-                                        }}
-                                        className="text-red-600"
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                  <TableCell className="font-medium">
+                                    {customer.name}
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell text-slate-600">
+                                    {customer.email || "N/A"}
+                                  </TableCell>
+                                  <TableCell className="hidden lg:table-cell text-slate-600">
+                                    {customer.phone || "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {customer.budget_min && customer.budget_max
+                                      ? `${formatCurrency(
+                                          customer.budget_min
+                                        )} - ${formatCurrency(
+                                          customer.budget_max
+                                        )}`
+                                      : "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        customer.status === "active"
+                                          ? "success"
+                                          : "secondary"
+                                      }
+                                      className="capitalize"
+                                    >
+                                      {customer.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell
+                                    className="text-right"
+                                    onClick={(e: React.MouseEvent) =>
+                                      e.stopPropagation()
+                                    }
+                                  >
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            setSelectedCustomer(customer);
+                                            setIsCustomerDrawerOpen(true);
+                                          }}
+                                        >
+                                          <Eye className="mr-2 h-4 w-4" />
+                                          View Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            handleEditCustomer(customer);
+                                          }}
+                                        >
+                                          <Edit className="mr-2 h-4 w-4" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={(e: React.MouseEvent) => {
+                                            e.stopPropagation();
+                                            handleDeleteCustomer(customer);
+                                          }}
+                                          className="text-red-600"
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            )}
                           </TableBody>
                         </Table>
                       </div>
@@ -1856,9 +1887,9 @@ export function CompanyDetailsDrawer({
                     <>
                       {/* Stats */}
                       {notificationStats && (
-                        <NotificationStatsCards 
-                          stats={notificationStats} 
-                          isLoading={notificationStatsLoading} 
+                        <NotificationStatsCards
+                          stats={notificationStats}
+                          isLoading={notificationStatsLoading}
                         />
                       )}
 
@@ -1866,7 +1897,9 @@ export function CompanyDetailsDrawer({
                       <SendNotificationForm
                         companyId={company.id}
                         onSuccess={() => {
-                          queryClient.invalidateQueries({ queryKey: ['notification-stats', company.id] });
+                          queryClient.invalidateQueries({
+                            queryKey: ["notification-stats", company.id],
+                          });
                         }}
                       />
 
@@ -1968,7 +2001,9 @@ export function CompanyDetailsDrawer({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password {editingUser ? "(leave empty to keep current)" : ""}</Label>
+              <Label htmlFor="password">
+                Password {editingUser ? "(leave empty to keep current)" : ""}
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -1976,7 +2011,11 @@ export function CompanyDetailsDrawer({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setUserForm({ ...userForm, password: e.target.value })
                 }
-                placeholder={editingUser ? "Enter new password (optional)" : "Leave empty for default password"}
+                placeholder={
+                  editingUser
+                    ? "Enter new password (optional)"
+                    : "Leave empty for default password"
+                }
               />
             </div>
           </div>

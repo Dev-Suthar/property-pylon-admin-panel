@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, LoginResponse } from '@/services/authService';
+import { CONFIG } from '@/lib/config';
 
 interface User {
   id: string;
@@ -27,8 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for stored auth data
-    const storedToken = localStorage.getItem('admin_token');
-    const storedUser = localStorage.getItem('admin_user');
+    const storedToken = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+    const storedUser = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_DATA);
     
     if (storedToken && storedUser) {
       try {
@@ -36,8 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
       }
     }
     setIsLoading(false);
@@ -52,8 +53,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(response.user);
       setToken(response.token);
-      localStorage.setItem('admin_token', response.token);
-      localStorage.setItem('admin_user', JSON.stringify(response.user));
+      localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, response.token);
+      localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(response.user));
     } catch (error) {
       // Re-throw to let the component handle it
       throw error;
@@ -68,8 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setToken(null);
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_user');
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
     }
   };
 

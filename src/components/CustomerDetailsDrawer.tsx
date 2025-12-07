@@ -1,16 +1,22 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from '@/components/ui/drawer';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loading } from '@/components/ui/loading';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loading } from "@/components/ui/loading";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Sheet,
   SheetContent,
@@ -18,18 +24,18 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import {
   UsersRound,
   Mail,
@@ -46,13 +52,17 @@ import {
   Activity,
   Tag,
   Clock,
-} from 'lucide-react';
-import { formatPriceWithCurrency } from '@/utils/priceUtils';
-import { customerDetailsService, CustomerDetails, SuggestedProperty } from '@/services/customerService';
-import { Property } from '@/services/propertyService';
-import { PropertyDetailsDrawer } from '@/components/PropertyDetailsDrawer';
-import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+} from "lucide-react";
+import { formatPriceWithCurrency } from "@/utils/priceUtils";
+import {
+  customerDetailsService,
+  CustomerDetails,
+  SuggestedProperty,
+} from "@/services/customerService";
+import { Property } from "@/services/propertyService";
+import { PropertyDetailsDrawer } from "@/components/PropertyDetailsDrawer";
+import { format } from "date-fns";
+import { Plus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -60,7 +70,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
 interface CustomerDetailsDrawerProps {
   customer: CustomerDetails | null;
@@ -68,67 +78,99 @@ interface CustomerDetailsDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CustomerDetailsDrawer({ customer, open, onOpenChange }: CustomerDetailsDrawerProps) {
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+export function CustomerDetailsDrawer({
+  customer,
+  open,
+  onOpenChange,
+}: CustomerDetailsDrawerProps) {
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null
+  );
   const [isPropertyDrawerOpen, setIsPropertyDrawerOpen] = useState(false);
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
-  const [noteContent, setNoteContent] = useState('');
-  const [noteType, setNoteType] = useState<'general' | 'issue' | 'positive'>('general');
+  const [noteContent, setNoteContent] = useState("");
+  const [noteType, setNoteType] = useState<"general" | "issue" | "positive">(
+    "general"
+  );
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: customerDetails, isLoading, error } = useQuery({
-    queryKey: ['customer-details', customer?.id],
-    queryFn: () => customer?.id ? customerDetailsService.getById(customer.id) : Promise.resolve(null),
+  const {
+    data: customerDetails,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["customer-details", customer?.id],
+    queryFn: () =>
+      customer?.id
+        ? customerDetailsService.getById(customer.id)
+        : Promise.resolve(null),
     enabled: !!customer?.id && open,
     retry: false,
   });
 
   // Fetch customer notes
   const { data: notesData, isLoading: notesLoading } = useQuery({
-    queryKey: ['customer-notes', customer?.id],
-    queryFn: () => customer?.id ? customerDetailsService.getCustomerNotes(customer.id, { limit: 50 }) : Promise.resolve({ data: [], total: 0, page: 1, limit: 50 }),
+    queryKey: ["customer-notes", customer?.id],
+    queryFn: () =>
+      customer?.id
+        ? customerDetailsService.getCustomerNotes(customer.id, { limit: 50 })
+        : Promise.resolve({ data: [], total: 0, page: 1, limit: 50 }),
     enabled: !!customer?.id && open,
     retry: false,
   });
 
   // Fetch customer activities
   const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['customer-activities', customer?.id],
-    queryFn: () => customer?.id ? customerDetailsService.getCustomerActivities(customer.id, { limit: 50 }) : Promise.resolve({ data: [], total: 0, page: 1, limit: 50 }),
+    queryKey: ["customer-activities", customer?.id],
+    queryFn: () =>
+      customer?.id
+        ? customerDetailsService.getCustomerActivities(customer.id, {
+            limit: 50,
+          })
+        : Promise.resolve({ data: [], total: 0, page: 1, limit: 50 }),
     enabled: !!customer?.id && open,
     retry: false,
   });
 
   // Fetch suggested properties
-  const { data: suggestedPropertiesData, isLoading: propertiesLoading } = useQuery({
-    queryKey: ['customer-suggested-properties', customer?.id],
-    queryFn: () => customer?.id ? customerDetailsService.getCustomerSuggestedProperties(customer.id) : Promise.resolve({ data: [], properties: [], total: 0 }),
-    enabled: !!customer?.id && open,
-    retry: false,
-  });
+  const { data: suggestedPropertiesData, isLoading: propertiesLoading } =
+    useQuery({
+      queryKey: ["customer-suggested-properties", customer?.id],
+      queryFn: () =>
+        customer?.id
+          ? customerDetailsService.getCustomerSuggestedProperties(customer.id)
+          : Promise.resolve({ data: [], properties: [], total: 0 }),
+      enabled: !!customer?.id && open,
+      retry: false,
+    });
 
   // Create note mutation
   const createNoteMutation = useMutation({
-    mutationFn: (data: { content: string; type: 'general' | 'issue' | 'positive' }) => {
-      if (!customer?.id) throw new Error('Customer ID is required');
+    mutationFn: (data: {
+      content: string;
+      type: "general" | "issue" | "positive";
+    }) => {
+      if (!customer?.id) throw new Error("Customer ID is required");
       return customerDetailsService.createCustomerNote(customer.id, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-notes', customer?.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["customer-notes", customer?.id],
+      });
       setIsAddNoteModalOpen(false);
-      setNoteContent('');
-      setNoteType('general');
+      setNoteContent("");
+      setNoteType("general");
       toast({
-        title: 'Success',
-        description: 'Note added successfully',
+        title: "Success",
+        description: "Note added successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to add note',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to add note",
+        variant: "destructive",
       });
     },
   });
@@ -136,9 +178,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
   const handleAddNote = () => {
     if (!noteContent.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter note content',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please enter note content",
+        variant: "destructive",
       });
       return;
     }
@@ -153,40 +195,42 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
   const customerData = customerDetails || customer;
   const notes = notesData?.data || [];
   const activities = activitiesData?.data || activitiesData?.activities || [];
-  
+
   // Get linked properties from customer details or suggested properties
-  const linkedProperties = (customerData as any).linked_properties || 
-                          (customerData as any).suggested_properties || 
-                          suggestedPropertiesData?.data || 
-                          suggestedPropertiesData?.properties || [];
-  
+  const linkedProperties =
+    (customerData as any).linked_properties ||
+    (customerData as any).suggested_properties ||
+    suggestedPropertiesData?.data ||
+    suggestedPropertiesData?.properties ||
+    [];
+
   const suggestedProperties = linkedProperties;
 
   const formatCurrency = (amount?: number) => {
-    if (!amount) return 'N/A';
+    if (!amount) return "N/A";
     return formatPriceWithCurrency(amount, true); // Use converter format (K, L, Cr)
   };
 
   const getNoteTypeColor = (type: string) => {
     switch (type) {
-      case 'positive':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'issue':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "positive":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "issue":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return "bg-blue-100 text-blue-800 border-blue-200";
     }
   };
 
   const getActivityTypeIcon = (type?: string) => {
     switch (type) {
-      case 'call':
+      case "call":
         return <Phone className="h-4 w-4" />;
-      case 'visit':
+      case "visit":
         return <Home className="h-4 w-4" />;
-      case 'whatsapp':
+      case "whatsapp":
         return <MessageSquare className="h-4 w-4" />;
-      case 'note':
+      case "note":
         return <MessageSquare className="h-4 w-4" />;
       default:
         return <Activity className="h-4 w-4" />;
@@ -204,7 +248,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                   <UsersRound className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <DrawerTitle className="text-2xl font-bold text-slate-900">{customerData.name}</DrawerTitle>
+                  <DrawerTitle className="text-2xl font-bold text-slate-900">
+                    {customerData.name}
+                  </DrawerTitle>
                   <DrawerDescription className="mt-1 text-slate-600">
                     Customer details and information
                   </DrawerDescription>
@@ -217,7 +263,12 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                     Hot Lead
                   </Badge>
                 )}
-                <Badge variant={customerData.status === 'active' ? 'success' : 'secondary'} className="shadow-md capitalize">
+                <Badge
+                  variant={
+                    customerData.status === "active" ? "success" : "secondary"
+                  }
+                  className="shadow-md capitalize"
+                >
                   {customerData.status}
                 </Badge>
               </div>
@@ -241,7 +292,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 {/* Customer Information */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-slate-900">Contact Information</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-slate-900">
+                      Contact Information
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -249,8 +302,12 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                         <div className="flex items-start gap-3">
                           <Mail className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-700">Email</p>
-                            <p className="text-sm text-slate-600">{customerData.email}</p>
+                            <p className="text-sm font-medium text-slate-700">
+                              Email
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.email}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -258,8 +315,12 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                         <div className="flex items-start gap-3">
                           <Phone className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-700">Phone</p>
-                            <p className="text-sm text-slate-600">{customerData.phone}</p>
+                            <p className="text-sm font-medium text-slate-700">
+                              Phone
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.phone}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -267,11 +328,23 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                         <div className="flex items-start gap-3 md:col-span-2">
                           <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-700">Address</p>
-                            <p className="text-sm text-slate-600">{customerData.address}</p>
-                            {(customerData.city || customerData.state || customerData.pincode) && (
+                            <p className="text-sm font-medium text-slate-700">
+                              Address
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.address}
+                            </p>
+                            {(customerData.city ||
+                              customerData.state ||
+                              customerData.pincode) && (
                               <p className="text-sm text-slate-500 mt-1">
-                                {[customerData.city, customerData.state, customerData.pincode].filter(Boolean).join(', ')}
+                                {[
+                                  customerData.city,
+                                  customerData.state,
+                                  customerData.pincode,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ")}
                               </p>
                             )}
                           </div>
@@ -280,18 +353,22 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                       <div className="flex items-start gap-3">
                         <Tag className="h-5 w-5 text-slate-500 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Type</p>
+                          <p className="text-sm font-medium text-slate-700">
+                            Type
+                          </p>
                           <Badge variant="outline" className="capitalize mt-1">
-                            {customerData.type || 'buyer'}
+                            {customerData.type || "buyer"}
                           </Badge>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <Calendar className="h-5 w-5 text-slate-500 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-700">Created</p>
+                          <p className="text-sm font-medium text-slate-700">
+                            Created
+                          </p>
                           <p className="text-sm text-slate-600">
-                            {format(new Date(customerData.created_at), 'PPp')}
+                            {format(new Date(customerData.created_at), "PPp")}
                           </p>
                         </div>
                       </div>
@@ -300,110 +377,185 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 </Card>
 
                 {/* Buyer Requirements */}
-                {customerData.type === 'buyer' || customerData.type === 'both' ? (
+                {customerData.type === "buyer" ||
+                customerData.type === "both" ? (
                   <Card className="border-0 shadow-lg">
                     <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-slate-900">Buyer Requirements</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-slate-900">
+                        Buyer Requirements
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm font-medium text-slate-700 mb-2">Budget Range</p>
+                          <p className="text-sm font-medium text-slate-700 mb-2">
+                            Budget Range
+                          </p>
                           <p className="text-lg font-semibold text-slate-900">
                             {customerData.budget_min && customerData.budget_max
-                              ? `${formatCurrency(customerData.budget_min)} - ${formatCurrency(customerData.budget_max)}`
-                              : 'Not specified'}
+                              ? `${formatCurrency(
+                                  customerData.budget_min
+                                )} - ${formatCurrency(customerData.budget_max)}`
+                              : "Not specified"}
                           </p>
                         </div>
-                        {customerData.preferred_bhk && customerData.preferred_bhk.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">Preferred BHK</p>
-                            <div className="flex flex-wrap gap-2">
-                              {customerData.preferred_bhk.map((bhk, idx) => (
-                                <Badge key={idx} variant="outline">{bhk}</Badge>
-                              ))}
+                        {customerData.preferred_bhk &&
+                          customerData.preferred_bhk.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-slate-700 mb-2">
+                                Preferred BHK
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {customerData.preferred_bhk.map((bhk, idx) => (
+                                  <Badge key={idx} variant="outline">
+                                    {bhk}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {(customerData as CustomerDetails & { property_type?: string }).property_type && (
+                          )}
+                        {(
+                          customerData as CustomerDetails & {
+                            property_type?: string;
+                          }
+                        ).property_type && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">Property Type</p>
-                            <Badge variant="outline" className="capitalize">{(customerData as CustomerDetails & { property_type?: string }).property_type}</Badge>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Property Type
+                            </p>
+                            <Badge variant="outline" className="capitalize">
+                              {
+                                (
+                                  customerData as CustomerDetails & {
+                                    property_type?: string;
+                                  }
+                                ).property_type
+                              }
+                            </Badge>
                           </div>
                         )}
                         {customerData.preferred_localities && (
                           <div className="md:col-span-2">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Preferred Localities</p>
-                            <p className="text-sm text-slate-600">{customerData.preferred_localities}</p>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Preferred Localities
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.preferred_localities}
+                            </p>
                           </div>
                         )}
-                        {customerData.must_have_features && customerData.must_have_features.length > 0 && (
-                          <div className="md:col-span-2">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Must Have Features</p>
-                            <div className="flex flex-wrap gap-2">
-                              {customerData.must_have_features.map((feature, idx) => (
-                                <Badge key={idx} variant="outline" className="bg-blue-50">{feature}</Badge>
-                              ))}
+                        {customerData.must_have_features &&
+                          customerData.must_have_features.length > 0 && (
+                            <div className="md:col-span-2">
+                              <p className="text-sm font-medium text-slate-700 mb-2">
+                                Must Have Features
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {customerData.must_have_features.map(
+                                  (feature, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="outline"
+                                      className="bg-blue-50"
+                                    >
+                                      {feature}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {customerData.nice_to_have_features && customerData.nice_to_have_features.length > 0 && (
-                          <div className="md:col-span-2">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Nice to Have Features</p>
-                            <div className="flex flex-wrap gap-2">
-                              {customerData.nice_to_have_features.map((feature, idx) => (
-                                <Badge key={idx} variant="outline">{feature}</Badge>
-                              ))}
+                          )}
+                        {customerData.nice_to_have_features &&
+                          customerData.nice_to_have_features.length > 0 && (
+                            <div className="md:col-span-2">
+                              <p className="text-sm font-medium text-slate-700 mb-2">
+                                Nice to Have Features
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {customerData.nice_to_have_features.map(
+                                  (feature, idx) => (
+                                    <Badge key={idx} variant="outline">
+                                      {feature}
+                                    </Badge>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     </CardContent>
                   </Card>
                 ) : null}
 
                 {/* Seller Requirements */}
-                {customerData.type === 'owner' || customerData.type === 'both' ? (
+                {customerData.type === "owner" ||
+                customerData.type === "both" ? (
                   <Card className="border-0 shadow-lg">
                     <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-slate-900">Seller Requirements</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-slate-900">
+                        Seller Requirements
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {customerData.expected_price && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">Expected Price</p>
-                            <p className="text-lg font-semibold text-slate-900">{formatCurrency(customerData.expected_price)}</p>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Expected Price
+                            </p>
+                            <p className="text-lg font-semibold text-slate-900">
+                              {formatCurrency(customerData.expected_price)}
+                            </p>
                           </div>
                         )}
                         {customerData.seller_bhk && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">BHK</p>
-                            <Badge variant="outline">{customerData.seller_bhk}</Badge>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              BHK
+                            </p>
+                            <Badge variant="outline">
+                              {customerData.seller_bhk}
+                            </Badge>
                           </div>
                         )}
                         {customerData.seller_area && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">Area</p>
-                            <p className="text-sm text-slate-600">{customerData.seller_area}</p>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Area
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.seller_area}
+                            </p>
                           </div>
                         )}
                         {customerData.seller_location && (
                           <div className="md:col-span-2">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Location</p>
-                            <p className="text-sm text-slate-600">{customerData.seller_location}</p>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Location
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.seller_location}
+                            </p>
                           </div>
                         )}
                         {customerData.selling_reason && (
                           <div className="md:col-span-2">
-                            <p className="text-sm font-medium text-slate-700 mb-2">Selling Reason</p>
-                            <p className="text-sm text-slate-600">{customerData.selling_reason}</p>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Selling Reason
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {customerData.selling_reason}
+                            </p>
                           </div>
                         )}
                         {customerData.urgency_level && (
                           <div>
-                            <p className="text-sm font-medium text-slate-700 mb-2">Urgency Level</p>
-                            <Badge variant="outline" className="capitalize">{customerData.urgency_level}</Badge>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Urgency Level
+                            </p>
+                            <Badge variant="outline" className="capitalize">
+                              {customerData.urgency_level}
+                            </Badge>
                           </div>
                         )}
                       </div>
@@ -415,7 +567,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-semibold text-slate-900">Notes ({notes.length})</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-slate-900">
+                        Notes ({notes.length})
+                      </CardTitle>
                       <Button
                         variant="outline"
                         size="sm"
@@ -442,11 +596,16 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                         {notes.map((note) => (
                           <div
                             key={note.id}
-                            className={`p-4 rounded-lg border ${getNoteTypeColor(note.type)}`}
+                            className={`p-4 rounded-lg border ${getNoteTypeColor(
+                              note.type
+                            )}`}
                           >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs capitalize">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs capitalize"
+                                >
                                   {note.type}
                                 </Badge>
                                 {note.creator && (
@@ -456,7 +615,10 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                                 )}
                               </div>
                               <span className="text-xs text-slate-500">
-                                {format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}
+                                {format(
+                                  new Date(note.created_at),
+                                  "MMM d, yyyy h:mm a"
+                                )}
                               </span>
                             </div>
                             <p className="text-sm">{note.content}</p>
@@ -478,7 +640,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 {/* Activities */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-slate-900">Activities ({activities.length})</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-slate-900">
+                      Activities ({activities.length})
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {activitiesLoading ? (
@@ -501,7 +665,9 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                               {getActivityTypeIcon(activity.type)}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-900">{activity.description}</p>
+                              <p className="text-sm font-medium text-slate-900">
+                                {activity.description}
+                              </p>
                               <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                                 {activity.creator && (
                                   <span>by {activity.creator.name}</span>
@@ -509,7 +675,10 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                                 {activity.date && (
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    {format(new Date(activity.date), 'MMM d, yyyy h:mm a')}
+                                    {format(
+                                      new Date(activity.date),
+                                      "MMM d, yyyy h:mm a"
+                                    )}
                                   </span>
                                 )}
                                 {(activity as any).Property && (
@@ -530,13 +699,15 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                 {/* Linked Properties */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold text-slate-900">Linked Properties ({linkedProperties.length})</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-slate-900">
+                      Linked Properties ({linkedProperties.length})
+                    </CardTitle>
                     <CardDescription>
-                      {customerData.type === 'buyer' 
-                        ? 'Properties suggested for this buyer' 
-                        : customerData.type === 'owner' 
-                        ? 'Properties owned by this seller'
-                        : 'Properties linked to this customer'}
+                      {customerData.type === "buyer"
+                        ? "Properties suggested for this buyer"
+                        : customerData.type === "owner"
+                        ? "Properties owned by this seller"
+                        : "Properties linked to this customer"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -557,75 +728,101 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
                               <TableRow className="hover:bg-transparent">
                                 <TableHead>Property</TableHead>
                                 <TableHead>Location</TableHead>
-                                <TableHead className="hidden md:table-cell">Details</TableHead>
+                                <TableHead className="hidden md:table-cell">
+                                  Details
+                                </TableHead>
                                 <TableHead>Price</TableHead>
                                 <TableHead>Match Score</TableHead>
                                 <TableHead>Status</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {suggestedProperties.map((item: SuggestedProperty) => (
-                                <TableRow
-                                  key={item.property.id}
-                                  className="cursor-pointer hover:bg-slate-50"
-                                  onClick={() => {
-                                    setSelectedProperty(item.property);
-                                    setIsPropertyDrawerOpen(true);
-                                  }}
-                                >
-                                  <TableCell className="font-medium">{item.property.title}</TableCell>
-                                  <TableCell className="text-slate-600">
-                                    {item.property.city || item.property.address || 'N/A'}
-                                  </TableCell>
-                                  <TableCell className="hidden md:table-cell text-slate-600">
-                                    <div className="flex items-center gap-3 text-sm">
-                                      {item.property.bedrooms !== undefined && item.property.bedrooms > 0 && (
-                                        <div className="flex items-center gap-1">
-                                          <Bed className="h-3.5 w-3.5" />
-                                          <span>{item.property.bedrooms}</span>
-                                        </div>
+                              {suggestedProperties.map(
+                                (item: SuggestedProperty) => (
+                                  <TableRow
+                                    key={item.property.id}
+                                    className="cursor-pointer hover:bg-slate-50"
+                                    onClick={() => {
+                                      setSelectedProperty(item.property);
+                                      setIsPropertyDrawerOpen(true);
+                                    }}
+                                  >
+                                    <TableCell className="font-medium">
+                                      {item.property.title}
+                                    </TableCell>
+                                    <TableCell className="text-slate-600">
+                                      {item.property.city ||
+                                        item.property.address ||
+                                        "N/A"}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell text-slate-600">
+                                      <div className="flex items-center gap-3 text-sm">
+                                        {item.property.bedrooms !== undefined &&
+                                          item.property.bedrooms > 0 && (
+                                            <div className="flex items-center gap-1">
+                                              <Bed className="h-3.5 w-3.5" />
+                                              <span>
+                                                {item.property.bedrooms}
+                                              </span>
+                                            </div>
+                                          )}
+                                        {item.property.bathrooms !==
+                                          undefined &&
+                                          item.property.bathrooms > 0 && (
+                                            <div className="flex items-center gap-1">
+                                              <Bath className="h-3.5 w-3.5" />
+                                              <span>
+                                                {item.property.bathrooms}
+                                              </span>
+                                            </div>
+                                          )}
+                                        {item.property.area && (
+                                          <div className="flex items-center gap-1">
+                                            <Square className="h-3.5 w-3.5" />
+                                            <span>
+                                              {item.property.area} sq ft
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="font-semibold">
+                                      {formatCurrency(item.property.price)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {item.match_score !== undefined &&
+                                      item.match_score !== null ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="font-semibold"
+                                        >
+                                          {item.match_score}%
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-slate-400">
+                                          N/A
+                                        </span>
                                       )}
-                                      {item.property.bathrooms !== undefined && item.property.bathrooms > 0 && (
-                                        <div className="flex items-center gap-1">
-                                          <Bath className="h-3.5 w-3.5" />
-                                          <span>{item.property.bathrooms}</span>
-                                        </div>
-                                      )}
-                                      {item.property.area && (
-                                        <div className="flex items-center gap-1">
-                                          <Square className="h-3.5 w-3.5" />
-                                          <span>{item.property.area} sq ft</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="font-semibold">
-                                    {formatCurrency(item.property.price)}
-                                  </TableCell>
-                                  <TableCell>
-                                    {item.match_score !== undefined && item.match_score !== null ? (
-                                      <Badge variant="outline" className="font-semibold">
-                                        {item.match_score}%
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge
+                                        variant={
+                                          item.visit_status === "visited"
+                                            ? "success"
+                                            : item.visit_status === "scheduled"
+                                            ? "default"
+                                            : item.visit_status === "interested"
+                                            ? "default"
+                                            : "secondary"
+                                        }
+                                        className="capitalize"
+                                      >
+                                        {item.visit_status || "pending"}
                                       </Badge>
-                                    ) : (
-                                      <span className="text-slate-400">N/A</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        item.visit_status === 'visited' ? 'success' :
-                                        item.visit_status === 'scheduled' ? 'default' :
-                                        item.visit_status === 'interested' ? 'default' :
-                                        'secondary'
-                                      }
-                                      className="capitalize"
-                                    >
-                                      {item.visit_status || 'pending'}
-                                    </Badge>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              )}
                             </TableBody>
                           </Table>
                         </div>
@@ -648,17 +845,26 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
 
       {/* Add Note Modal */}
       <Sheet open={isAddNoteModalOpen} onOpenChange={setIsAddNoteModalOpen}>
-        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto z-[60]">
+        <SheetContent
+          side="bottom"
+          className="max-h-[90vh] overflow-y-auto z-[60]"
+        >
           <SheetHeader>
             <SheetTitle>Add Note</SheetTitle>
             <SheetDescription>
-              Add a note for this customer. Notes help track important information and interactions.
+              Add a note for this customer. Notes help track important
+              information and interactions.
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="note-type">Note Type</Label>
-              <Select value={noteType} onValueChange={(value: 'general' | 'issue' | 'positive') => setNoteType(value)}>
+              <Select
+                value={noteType}
+                onValueChange={(value: "general" | "issue" | "positive") =>
+                  setNoteType(value)
+                }
+              >
                 <SelectTrigger id="note-type">
                   <SelectValue placeholder="Select note type" />
                 </SelectTrigger>
@@ -686,8 +892,8 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
               variant="outline"
               onClick={() => {
                 setIsAddNoteModalOpen(false);
-                setNoteContent('');
-                setNoteType('general');
+                setNoteContent("");
+                setNoteType("general");
               }}
               disabled={createNoteMutation.isPending}
             >
@@ -697,7 +903,7 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
               onClick={handleAddNote}
               disabled={createNoteMutation.isPending || !noteContent.trim()}
             >
-              {createNoteMutation.isPending ? 'Saving...' : 'Save Note'}
+              {createNoteMutation.isPending ? "Saving..." : "Save Note"}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -705,4 +911,3 @@ export function CustomerDetailsDrawer({ customer, open, onOpenChange }: Customer
     </Drawer>
   );
 }
-
