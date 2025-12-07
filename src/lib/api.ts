@@ -1,23 +1,21 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-// Use EC2 URL for both development and production
-// Can be overridden with VITE_API_URL environment variable
-// Note: If site is on HTTPS, API must also be on HTTPS or use a proxy to avoid mixed content errors
+// Use relative API path when in production (HTTPS) to avoid mixed content issues
+// The .htaccess file will proxy /api/* requests to the backend server
+// For development, use the full API URL
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
   
-  // Default API URL - ensure it matches the protocol of the current site
-  // If your API supports HTTPS, change http:// to https://
-  const defaultUrl = 'http://98.92.75.163:3000/api/v1';
-  
-  // If we're on HTTPS and API is HTTP, this will cause mixed content errors
-  // Solution: Either use HTTPS for API or set up a proxy
-  if (window.location.protocol === 'https:' && defaultUrl.startsWith('http:')) {
-    console.warn('Mixed content warning: Site is HTTPS but API is HTTP. Consider using HTTPS for API or setting up a proxy.');
+  // In production (HTTPS), use relative path that goes through proxy
+  // In development, use direct API URL
+  if (import.meta.env.PROD && window.location.protocol === 'https:') {
+    // Use relative path - .htaccess will proxy to backend
+    return '/api';
   }
   
-  return defaultUrl;
+  // Development or HTTP - use direct API URL
+  return 'http://98.92.75.163:3000/api/v1';
 };
 
 const API_BASE_URL = getApiBaseUrl();

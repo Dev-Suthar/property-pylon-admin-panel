@@ -2,6 +2,11 @@
   RewriteEngine On
   RewriteBase /
   
+  # Proxy API requests to backend server (avoids mixed content issues)
+  # This forwards /api/* requests to the backend server
+  RewriteCond %{REQUEST_URI} ^/api/(.*)$
+  RewriteRule ^api/(.*)$ http://98.92.75.163:3000/api/v1/$1 [P,L]
+  
   # Handle Angular and React Router - redirect all requests to index.html
   # Don't rewrite files or directories that exist
   RewriteCond %{REQUEST_FILENAME} !-f
