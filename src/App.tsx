@@ -17,6 +17,9 @@ import { Activity } from './pages/Activity';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
 import { Salesmen } from './pages/Salesmen';
+import { AppVersions } from './pages/AppVersions';
+import { Billing } from './pages/Billing';
+import { Database } from './pages/Database';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -106,6 +109,16 @@ function App() {
               }
             />
             <Route
+              path="/billing"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Billing />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/notification-templates"
               element={
                 <ProtectedRoute>
@@ -161,6 +174,26 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Salesmen />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/app-versions"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <AppVersions />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/database"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Database />
                   </MainLayout>
                 </ProtectedRoute>
               }

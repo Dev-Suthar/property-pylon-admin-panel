@@ -345,7 +345,7 @@ export function CompanyDetailsDrawer({
   });
 
   // Fetch notification stats
-  const { data: notificationStats } = useQuery({
+  const { data: notificationStats, isLoading: notificationStatsLoading } = useQuery({
     queryKey: ['notification-stats', company?.id],
     queryFn: () => notificationService.getStats(company?.id),
     enabled: !!company?.id && open && activeTab === 'notifications',
@@ -1855,7 +1855,12 @@ export function CompanyDetailsDrawer({
                   {company && (
                     <>
                       {/* Stats */}
-                      <NotificationStatsSection companyId={company.id} />
+                      {notificationStats && (
+                        <NotificationStatsCards 
+                          stats={notificationStats} 
+                          isLoading={notificationStatsLoading} 
+                        />
+                      )}
 
                       {/* Send Notification */}
                       <SendNotificationForm
