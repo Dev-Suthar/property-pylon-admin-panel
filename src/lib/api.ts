@@ -1,22 +1,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { CONFIG } from './config';
 
-// Use relative API path when in production (HTTPS) to avoid mixed content issues
-// The .htaccess file will proxy /api/* requests to the backend server
-// For development, use the full API URL
+// Always use the configured backend API URL directly
+// This bypasses the proxy and connects directly to the backend server
 const getApiBaseUrl = () => {
   // Check if VITE_API_URL is explicitly set (takes precedence)
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
   
-  // In production (HTTPS), use relative path that goes through proxy
-  // In development, use direct API URL from config
-  if (import.meta.env.PROD && window.location.protocol === 'https:') {
-    // Use relative path - .htaccess will proxy to backend
-    return '/api';
-  }
-  
-  // Use configured API base URL
+  // Use configured API base URL from config
   return CONFIG.API_BASE_URL;
 };
 
