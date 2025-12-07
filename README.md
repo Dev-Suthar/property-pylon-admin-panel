@@ -120,7 +120,12 @@ Currently, the app will use mock data if these endpoints are not available, allo
 
 ## Environment Variables
 
+Create a `.env` file in the root directory with the following variables:
+
 - `VITE_API_URL`: Backend API base URL (default: `http://localhost:3000/api/v1`)
+- `VITE_GOOGLE_MAPS_API_KEY`: Google Maps API key for map functionality (optional)
+
+**Important**: Never commit your `.env` file or API keys to version control. Use `.env.example` as a template.
 
 ## License
 

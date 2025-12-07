@@ -3,7 +3,7 @@
  * Centralized configuration for the entire application
  */
 
-import { getApiBaseUrl, getEnvironmentConfig } from './environment';
+import { getApiBaseUrl, getEnvironmentConfig, getGoogleMapsApiKey } from './environment';
 
 const envConfig = getEnvironmentConfig();
 
@@ -15,7 +15,7 @@ export const CONFIG = {
   TIMEOUT: envConfig.TIMEOUT,
   DEBUG: envConfig.DEBUG,
   LOG_LEVEL: envConfig.LOG_LEVEL,
-  GOOGLE_MAPS_API_KEY: 'AIzaSyBEx5pLE46IyorCWTQ9CizWEpu4e8hP5NQ',
+  GOOGLE_MAPS_API_KEY: getGoogleMapsApiKey(),
   STORAGE_KEYS: {
     AUTH_TOKEN: 'admin_token',
     USER_DATA: 'admin_user',

@@ -8,6 +8,7 @@ export {
   getEnvironment,
   getEnvironmentConfig,
   getApiBaseUrl,
+  getGoogleMapsApiKey,
   type Environment,
   type EnvironmentConfig,
 } from './environment';

@@ -89,3 +89,10 @@ export const getApiBaseUrl = (): string => {
   // Production URL
   return "http://98.92.75.163:3000/api/v1";
 };
+
+/**
+ * Get Google Maps API Key from environment variables
+ */
+export const getGoogleMapsApiKey = (): string | undefined => {
+  return import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+};
