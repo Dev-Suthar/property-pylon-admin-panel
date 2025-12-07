@@ -1,14 +1,21 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { CONFIG } from './config';
 
-// Always use the configured backend API URL directly
-// This bypasses the proxy and connects directly to the backend server
+// Use proxy when on HTTPS to avoid mixed content issues
+// Use direct backend URL when on HTTP (development)
 const getApiBaseUrl = () => {
   // Check if VITE_API_URL is explicitly set (takes precedence)
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
   
-  // Use configured API base URL from config
+  // If page is served over HTTPS, use relative path that goes through proxy
+  // This avoids mixed content errors (HTTPS page trying to load HTTP resources)
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    // Use relative path - .htaccess will proxy to backend via api-proxy.php
+    return '/api';
+  }
+  
+  // For HTTP (development), use direct backend API URL
   return CONFIG.API_BASE_URL;
 };
 
