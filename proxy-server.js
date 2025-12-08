@@ -26,8 +26,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PROXY_PORT || 3002;
 
-// Get backend API URL from environment or use default
-const API_BASE_URL = process.env.API_BASE_URL || 'https://api.dreamtobuy.com/api/v1';
+// Get backend API base URL from environment or use default
+// This should be the base domain, not including /api/v1
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.dreamtobuy.com';
 
 // CORS configuration - allow requests from the frontend
 app.use(cors({
@@ -68,10 +69,10 @@ const proxyOptions = {
     target: API_BASE_URL,
     changeOrigin: true,
     pathRewrite: {
-        '^/api': '', // Remove /api prefix when forwarding to backend
+        '^/api': '/api/v1', // Replace /api with /api/v1 to match backend path structure
     },
-    // Preserve the original path if backend expects /api prefix
-    // Remove pathRewrite if your backend expects /api/v1/... paths
+    // The backend expects /api/v1/... paths
+    // Example: /api/auth/login -> https://api.dreamtobuy.com/api/v1/auth/login
     onProxyReq: (proxyReq, req, res) => {
         // Forward all headers except host
         Object.keys(req.headers).forEach((key) => {

@@ -1,22 +1,31 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { CONFIG } from './config';
 
-// Use proxy when on HTTPS to avoid mixed content issues
-// Use direct backend URL when on HTTP (development)
+// Use proxy to avoid CORS issues and mixed content problems
 const getApiBaseUrl = () => {
-  // Check if VITE_API_URL is explicitly set (takes precedence)
+  // Check if VITE_API_URL is explicitly set (for development)
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
   
-  // If page is served over HTTPS, use relative path that goes through proxy
-  // This avoids mixed content errors (HTTPS page trying to load HTTP resources)
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    // Use relative path - .htaccess will proxy to backend via api-proxy.php
+  // In development (localhost), always use relative path to go through Vite proxy
+  // This avoids CORS issues when making requests to the backend API
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    
+    // For localhost development, use relative path that goes through Vite proxy
+    // The Vite proxy forwards to the proxy server, which forwards to the backend
+    if (isLocalhost) {
+      return '/api';
+    }
+    
+    // In production (deployed), use relative path that goes through proxy
+    // This works for both HTTP and HTTPS
     return '/api';
   }
   
-  // For HTTP (development), use direct backend API URL
-  return CONFIG.API_BASE_URL;
+  // Fallback (shouldn't normally reach here)
+  return '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
