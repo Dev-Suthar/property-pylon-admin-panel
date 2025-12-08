@@ -224,15 +224,50 @@ foreach ($header_lines as $header_line) {
 }
 
 // Decompress response body if needed
+// Try decompression if Content-Encoding header indicates compression
+// Also try if response looks compressed (starts with gzip magic bytes)
+$original_body = $response_body;
+$decompressed = false;
+
 if ($is_gzip && function_exists('gzdecode')) {
-    $response_body = gzdecode($response_body);
-    if ($response_body === false) {
-        // If decompression fails, try gzinflate (for deflate format)
-        $response_body = substr($response, $header_size);
-        $response_body = @gzinflate(substr($response_body, 10));
+    $decompressed_body = @gzdecode($response_body);
+    if ($decompressed_body !== false) {
+        $response_body = $decompressed_body;
+        $decompressed = true;
     }
 } elseif ($is_deflate && function_exists('gzinflate')) {
-    $response_body = gzinflate($response_body);
+    $decompressed_body = @gzinflate($response_body);
+    if ($decompressed_body !== false) {
+        $response_body = $decompressed_body;
+        $decompressed = true;
+    }
+}
+
+// If Content-Encoding header wasn't found but response looks compressed, try decompression
+// Gzip magic bytes: 0x1f 0x8b (first two bytes)
+if (!$decompressed && strlen($response_body) > 2) {
+    $first_bytes = substr($response_body, 0, 2);
+    $is_gzip_magic = (ord($first_bytes[0]) == 0x1f && ord($first_bytes[1]) == 0x8b);
+    
+    if ($is_gzip_magic && function_exists('gzdecode')) {
+        $decompressed_body = @gzdecode($response_body);
+        if ($decompressed_body !== false) {
+            $response_body = $decompressed_body;
+            $decompressed = true;
+            // Update Content-Encoding detection for header removal
+            $is_gzip = true;
+        }
+    }
+    
+    // Try deflate as fallback
+    if (!$decompressed && function_exists('gzinflate')) {
+        $decompressed_body = @gzinflate($response_body);
+        if ($decompressed_body !== false) {
+            $response_body = $decompressed_body;
+            $decompressed = true;
+            $is_deflate = true;
+        }
+    }
 }
 
 // Parse and forward response headers (excluding compression-related headers)
@@ -253,7 +288,7 @@ foreach ($header_lines as $header_line) {
 }
 
 // Set correct Content-Length for decompressed body
-if ($is_gzip || $is_deflate) {
+if ($decompressed || $is_gzip || $is_deflate) {
     header('Content-Length: ' . strlen($response_body));
 }
 
