@@ -134,7 +134,6 @@ $curl_options = [
     CURLOPT_SSL_VERIFYPEER => false,
     CURLOPT_SSL_VERIFYHOST => false,
     CURLOPT_TIMEOUT => 30,
-    CURLOPT_ENCODING => '', // Accept compressed responses but don't auto-decompress (we'll handle it)
 ];
 
 // For POST, PUT, PATCH requests, set the body
