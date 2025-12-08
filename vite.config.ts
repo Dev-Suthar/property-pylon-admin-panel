@@ -6,6 +6,16 @@ export default defineConfig({
   server: {
     host: "::",
     port: 3001,
+    // Proxy API requests to the Node.js proxy server (development)
+    proxy: {
+      "/api": {
+        target: process.env.VITE_PROXY_URL || "http://localhost:3002",
+        changeOrigin: true,
+        secure: false,
+        // Don't rewrite the path - let the proxy server handle it
+        // rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
   plugins: [react()],
   resolve: {
@@ -29,4 +39,3 @@ export default defineConfig({
   },
   base: "/",
 });
-

@@ -3,20 +3,20 @@
   RewriteBase /
   
   # ============================================
-  # API Proxy Rule - MUST BE FIRST
+  # API Proxy Rule - Route to Node.js Proxy
   # ============================================
   # Route ALL /api/* requests to Node.js proxy server
   # The Node.js proxy server should be running on port 3002
-  # Option 1: Using mod_proxy (requires mod_proxy and mod_proxy_http)
-  # Uncomment the following if mod_proxy is enabled:
-  # ProxyPass /api http://localhost:3002/api
-  # ProxyPassReverse /api http://localhost:3002/api
-  # ProxyPreserveHost On
-  #
-  # Option 2: Using mod_rewrite (fallback if mod_proxy not available)
+  # You can use Apache's mod_proxy or mod_rewrite with ProxyPass
+  # 
+  # Option 1: Using mod_rewrite (if mod_proxy is not available)
   # This requires the Node.js proxy to be accessible
   RewriteCond %{REQUEST_URI} ^/api/
   RewriteRule ^api/(.*)$ http://localhost:3002/api/$1 [P,L]
+  
+  # Option 2: If you have mod_proxy enabled, use this instead:
+  # ProxyPass /api http://localhost:3002/api
+  # ProxyPassReverse /api http://localhost:3002/api
   
   # ============================================
   # React Router - Handle Client-Side Routing

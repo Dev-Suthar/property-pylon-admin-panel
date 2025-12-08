@@ -99,6 +99,17 @@ The admin panel uses JWT token-based authentication. Login credentials should ma
 
 The admin panel is configured to connect to the backend API at `http://localhost:3000/api/v1`. 
 
+### Compression Support
+
+The backend API uses gzip compression for all responses (via `compression()` middleware). The admin panel's API client (Axios) automatically handles compression by:
+- Sending `Accept-Encoding: gzip, deflate, br` headers
+- Automatically decompressing responses
+
+**Note for API Testing**: When testing API endpoints with `curl`, use the `--compressed` flag to automatically decompress responses:
+```bash
+curl --compressed -H "Authorization: Bearer <token>" https://admin.dreamtobuy.com/api/admin/companies
+```
+
 ### Required Backend Endpoints
 
 For full functionality, the following admin endpoints should be implemented:

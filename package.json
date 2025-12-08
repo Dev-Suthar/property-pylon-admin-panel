@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "proxy": "node proxy-server.js",
+    "proxy:prod": "NODE_ENV=production node proxy-server.js",
+    "dev:with-proxy": "concurrently \"npm run proxy\" \"npm run dev\"",
+    "test:proxy": "node test-proxy.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -49,9 +53,14 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
