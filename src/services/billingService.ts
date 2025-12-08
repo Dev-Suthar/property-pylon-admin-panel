@@ -20,6 +20,7 @@ export interface CompanyUsage {
 
 export interface CompanyUsageResponse {
   company_id: string;
+  company_name: string;
   period: {
     start: string;
     end: string;
@@ -31,7 +32,7 @@ export interface BillingReport {
   company: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
   period: {
     start: string;
@@ -41,7 +42,7 @@ export interface BillingReport {
   usage: {
     api_requests: number;
     s3_storage_bytes: number;
-    s3_storage_gb: string;
+    s3_storage_gb: number;
     s3_requests: number;
   };
   costs: {
@@ -64,7 +65,7 @@ export interface CompanyBillingData {
   company: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
   usage: {
     api_requests: number;
@@ -77,6 +78,10 @@ export interface CompanyBillingData {
     s3: number;
     data_transfer: number;
     total: number;
+  };
+  period: {
+    start: string;
+    end: string;
   };
 }
 
@@ -97,6 +102,119 @@ export interface AllCompaniesUsageReport {
   };
   companies: CompanyBillingData[];
   generated_at: string;
+  message?: string;
+}
+
+// CloudWatch Metrics Interfaces
+export interface EC2Metrics {
+  cpuUtilization: {
+    average: number;
+    max: number;
+    min: number;
+  };
+  networkIn: {
+    total: number;
+    average: number;
+  };
+  networkOut: {
+    total: number;
+    average: number;
+  };
+  instanceCount: number;
+  instances: Array<{
+    instanceId: string;
+    instanceType: string;
+    state: string;
+  }>;
+  error?: string;
+  errorMessage?: string;
+  warning?: string[];
+  warningMessage?: string;
+}
+
+export interface S3Metrics {
+  requests: {
+    get: number;
+    put: number;
+    delete: number;
+    total: number;
+  };
+  bucketSize: {
+    bytes: number;
+    gb: number;
+  };
+  bucketName: string;
+  error?: string;
+  errorMessage?: string;
+  warning?: string[];
+  warningMessage?: string;
+}
+
+export interface CompanyCloudWatchMetrics {
+  company: {
+    id: string;
+    name: string;
+  };
+  companyId: string;
+  period: {
+    start: string;
+    end: string;
+  };
+  ec2: EC2Metrics;
+  s3: S3Metrics;
+  fetchedAt: string;
+  error?: string;
+  errors?: Array<{
+    source: string;
+    error: string;
+    message: string;
+  }>;
+  warnings?: Array<{
+    source: string;
+    warnings: string[];
+    message: string;
+  }>;
+}
+
+export interface AllCompaniesCloudWatchMetrics {
+  period: {
+    start: string;
+    end: string;
+  };
+  companies: Array<{
+    company: {
+      id: string;
+      name: string;
+    };
+    companyId: string;
+    period: {
+      start: string;
+      end: string;
+    };
+    ec2: EC2Metrics;
+    s3: S3Metrics;
+    fetchedAt: string;
+    error?: string;
+    errorMessage?: string;
+    errors?: Array<{
+      source: string;
+      error: string;
+      message: string;
+    }>;
+    warnings?: Array<{
+      source: string;
+      warnings: string[];
+      message: string;
+    }>;
+  }>;
+  generatedAt: string;
+  summary?: {
+    total: number;
+    success: number;
+    errors: number;
+  };
+  warning?: string;
+  message?: string;
 }
 
 class BillingService {
@@ -150,6 +268,49 @@ class BillingService {
 
       const response = await apiClient.get<BillingReport>(
         `/billing/report/${companyId}${params.toString() ? `?${params.toString()}` : ''}`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get CloudWatch metrics for a company
+   */
+  async getCompanyCloudWatchMetrics(
+    companyId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<CompanyCloudWatchMetrics> {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const response = await apiClient.get<CompanyCloudWatchMetrics>(
+        `/billing/metrics/${companyId}${params.toString() ? `?${params.toString()}` : ''}`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get CloudWatch metrics for all companies (admin only)
+   */
+  async getAllCompaniesCloudWatchMetrics(
+    startDate?: string,
+    endDate?: string
+  ): Promise<AllCompaniesCloudWatchMetrics> {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const response = await apiClient.get<AllCompaniesCloudWatchMetrics>(
+        `/billing/metrics${params.toString() ? `?${params.toString()}` : ''}`
       );
       return response.data;
     } catch (error) {

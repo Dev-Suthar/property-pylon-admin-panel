@@ -49,7 +49,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { billingService, AllCompaniesUsageReport, CompanyBillingData } from '@/services/billingService';
+import {
+  billingService,
+  AllCompaniesUsageReport,
+  CompanyBillingData,
+  AllCompaniesCloudWatchMetrics,
+  CompanyCloudWatchMetrics,
+} from '@/services/billingService';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Cpu, Network, Server, HardDrive } from 'lucide-react';
 
 // Format currency
 const formatCurrency = (value: number): string => {
@@ -117,6 +125,7 @@ export function Billing() {
   const [period, setPeriod] = useState<string>('current');
   const [selectedCompany, setSelectedCompany] = useState<CompanyBillingData | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('billing');
 
   const dateRange = useMemo(() => getDateRange(period), [period]);
 
@@ -124,6 +133,18 @@ export function Billing() {
     queryKey: ['billing', 'all-companies', dateRange.start, dateRange.end],
     queryFn: () => billingService.getAllCompaniesUsage(dateRange.start, dateRange.end),
     retry: false,
+  });
+
+  const {
+    data: cloudWatchData,
+    isLoading: isCloudWatchLoading,
+    error: cloudWatchError,
+    refetch: refetchCloudWatch,
+  } = useQuery({
+    queryKey: ['cloudwatch', 'all-companies', dateRange.start, dateRange.end],
+    queryFn: () => billingService.getAllCompaniesCloudWatchMetrics(dateRange.start, dateRange.end),
+    retry: false,
+    enabled: activeTab === 'metrics', // Only fetch when metrics tab is active
   });
 
   const report = data || ({} as AllCompaniesUsageReport);
@@ -214,7 +235,7 @@ export function Billing() {
 
     const rows = report.companies.map((company) => [
       company.company.name,
-      company.company.email,
+      company.company.email || 'N/A',
       formatNumber(company.usage.api_requests),
       company.usage.s3_storage_gb,
       formatCurrency(company.costs.ec2),
@@ -268,15 +289,17 @@ export function Billing() {
     },
   ];
 
+  const cloudWatchMetrics = cloudWatchData || ({} as AllCompaniesCloudWatchMetrics);
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Cost Tracking
+            Cost Tracking & Metrics
           </h1>
           <p className="text-slate-600 mt-2 text-lg">
-            AWS resource usage and costs per company
+            AWS resource usage, costs, and CloudWatch metrics per company
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -293,7 +316,7 @@ export function Billing() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          {report.companies && report.companies.length > 0 && (
+          {activeTab === 'billing' && report.companies && report.companies.length > 0 && (
             <Button onClick={handleExportCSV} variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Export CSV
@@ -301,6 +324,14 @@ export function Billing() {
           )}
         </div>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="billing">Billing & Usage</TabsTrigger>
+          <TabsTrigger value="metrics">CloudWatch Metrics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="billing" className="space-y-8 mt-6">
 
       {error && (
         <Alert>
@@ -316,6 +347,13 @@ export function Billing() {
               Retry
             </Button>
           </AlertDescription>
+        </Alert>
+      )}
+
+      {!isLoading && !error && report.message && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{report.message}</AlertDescription>
         </Alert>
       )}
 
@@ -563,6 +601,244 @@ export function Billing() {
           </Card>
         </>
       )}
+        </TabsContent>
+
+        <TabsContent value="metrics" className="space-y-8 mt-6">
+          {cloudWatchError && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load CloudWatch metrics. {cloudWatchError instanceof Error ? cloudWatchError.message : 'Unknown error'}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-4"
+                  onClick={() => refetchCloudWatch()}
+                >
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isCloudWatchLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-8 w-16 animate-pulse rounded bg-gray-200 mb-2" />
+                    <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* CloudWatch Summary Cards */}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-5" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                    <CardTitle className="text-sm font-semibold text-slate-600">
+                      Total EC2 Instances
+                    </CardTitle>
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md">
+                      <Server className="h-5 w-5 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <div className="text-3xl font-bold text-slate-900 mb-2">
+                      {cloudWatchMetrics.companies?.reduce((sum, c) => sum + (c.ec2?.instanceCount || 0), 0) || 0}
+                    </div>
+                    <p className="text-xs text-slate-500">Active EC2 instances across all companies</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 opacity-5" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                    <CardTitle className="text-sm font-semibold text-slate-600">
+                      Avg CPU Utilization
+                    </CardTitle>
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 shadow-md">
+                      <Cpu className="h-5 w-5 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <div className="text-3xl font-bold text-slate-900 mb-2">
+                      {cloudWatchMetrics.companies && cloudWatchMetrics.companies.length > 0
+                        ? `${(
+                            cloudWatchMetrics.companies
+                              .filter(c => c.ec2 && !c.error)
+                              .reduce((sum, c) => sum + (c.ec2?.cpuUtilization?.average || 0), 0) /
+                            cloudWatchMetrics.companies.filter(c => c.ec2 && !c.error).length
+                          ).toFixed(1)}%`
+                        : '0%'}
+                    </div>
+                    <p className="text-xs text-slate-500">Average across all EC2 instances</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                    <CardTitle className="text-sm font-semibold text-slate-600">
+                      Total S3 Requests
+                    </CardTitle>
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 shadow-md">
+                      <HardDrive className="h-5 w-5 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <div className="text-3xl font-bold text-slate-900 mb-2">
+                      {formatNumber(
+                        cloudWatchMetrics.companies?.reduce((sum, c) => sum + (c.s3?.requests?.total || 0), 0) || 0
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">GET, PUT, DELETE requests</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-amber-500 opacity-5" />
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                    <CardTitle className="text-sm font-semibold text-slate-600">
+                      Network Traffic
+                    </CardTitle>
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-md">
+                      <Network className="h-5 w-5 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <div className="text-3xl font-bold text-slate-900 mb-2">
+                      {formatStorage(
+                        cloudWatchMetrics.companies?.reduce(
+                          (sum, c) => sum + (c.ec2?.networkIn?.total || 0) + (c.ec2?.networkOut?.total || 0),
+                          0
+                        ) || 0
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">Total in/out across all instances</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CloudWatch Metrics Table */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle>CloudWatch Metrics by Company</CardTitle>
+                  <CardDescription>
+                    Real-time AWS resource metrics from CloudWatch
+                    {cloudWatchMetrics.summary && (
+                      <span className="ml-2 text-xs">
+                        ({cloudWatchMetrics.summary.success} successful, {cloudWatchMetrics.summary.errors} errors)
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {cloudWatchMetrics.warning && (
+                    <Alert className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{cloudWatchMetrics.warning}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {cloudWatchMetrics.companies && cloudWatchMetrics.companies.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Company Name</TableHead>
+                          <TableHead>EC2 Instances</TableHead>
+                          <TableHead>CPU Avg (%)</TableHead>
+                          <TableHead>S3 Requests</TableHead>
+                          <TableHead>Network In</TableHead>
+                          <TableHead>Network Out</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cloudWatchMetrics.companies.map((company) => (
+                          <TableRow key={company.company.id}>
+                            <TableCell className="font-medium">
+                              {company.company.name}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <span className="text-slate-400">N/A</span>
+                              ) : (
+                                company.ec2?.instanceCount || 0
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <span className="text-slate-400">N/A</span>
+                              ) : (
+                                `${company.ec2?.cpuUtilization?.average?.toFixed(1) || '0.0'}%`
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <span className="text-slate-400">N/A</span>
+                              ) : (
+                                formatNumber(company.s3?.requests?.total || 0)
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <span className="text-slate-400">N/A</span>
+                              ) : (
+                                formatStorage(company.ec2?.networkIn?.total || 0)
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <span className="text-slate-400">N/A</span>
+                              ) : (
+                                formatStorage(company.ec2?.networkOut?.total || 0)
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {company.error ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  {company.error === 'AWS_CREDENTIALS_ERROR' ? 'Credentials Error' :
+                                   company.error === 'AWS_PERMISSION_DENIED' ? 'Permission Denied' :
+                                   company.error === 'THROTTLING' ? 'Rate Limited' :
+                                   'Error'}
+                                </Badge>
+                              ) : company.ec2?.warning || company.s3?.warning ? (
+                                <Badge variant="outline" className="text-xs">
+                                  Warning
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-green-600">
+                                  OK
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500">
+                      {isCloudWatchLoading
+                        ? 'Loading CloudWatch metrics...'
+                        : cloudWatchError
+                        ? 'Failed to load CloudWatch metrics. Please check AWS configuration.'
+                        : 'No CloudWatch metrics available for the selected period'}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Company Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
@@ -582,7 +858,7 @@ export function Billing() {
                     <span className="font-medium">Name:</span> {selectedCompany.company.name}
                   </p>
                   <p>
-                    <span className="font-medium">Email:</span> {selectedCompany.company.email}
+                    <span className="font-medium">Email:</span> {selectedCompany.company.email || 'N/A'}
                   </p>
                 </div>
               </div>

@@ -14,9 +14,11 @@
   # ProxyPreserveHost On
   #
   # Option 2: Using mod_rewrite (fallback if mod_proxy not available)
-  # This requires the Node.js proxy to be accessible
+  # Route directly to backend API (no proxy needed)
+  # IMPORTANT: Replace YOUR_EC2_IP with your actual EC2 server IP address
+  # Example: http://98.92.75.163:3000/api/v1/$1
   RewriteCond %{REQUEST_URI} ^/api/
-  RewriteRule ^api/(.*)$ http://localhost:3002/api/$1 [P,L]
+  RewriteRule ^api/(.*)$ http://98.92.75.163:3000/api/v1/$1 [P,L]
   
   # ============================================
   # React Router - Handle Client-Side Routing
