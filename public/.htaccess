@@ -4,8 +4,13 @@
   
   # Proxy API requests to backend server using PHP proxy (avoids mixed content issues)
   # This routes /api/* requests to api-proxy.php which forwards to the backend
+  # Make sure api-proxy.php exists and is accessible
+  # Use [L] flag to stop processing and prevent redirects that would convert POST to GET
+  # Use [PT] to pass through to PHP handler while preserving request method
   RewriteCond %{REQUEST_URI} ^/api/(.*)$
-  RewriteRule ^api/(.*)$ api-proxy.php?path=$1 [QSA,L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^api/(.*)$ api-proxy.php?path=$1 [QSA,L,PT]
   
   # Handle Angular and React Router - redirect all requests to index.html
   # Don't rewrite files or directories that exist
