@@ -55,9 +55,12 @@ import {
   CompanyBillingData,
   AllCompaniesCloudWatchMetrics,
   CompanyCloudWatchMetrics,
+  CompanyUsageResponse,
+  BillingReport,
 } from '@/services/billingService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Cpu, Network, Server, HardDrive } from 'lucide-react';
+import { Cpu, Network, Server, HardDrive, Building2 } from 'lucide-react';
+import { companyService, Company } from '@/services/companyService';
 
 // Format currency
 const formatCurrency = (value: number): string => {
@@ -123,26 +126,114 @@ const getDateRange = (period: string): { start: string; end: string } => {
 
 export function Billing() {
   const [period, setPeriod] = useState<string>('current');
-  const [selectedCompany, setSelectedCompany] = useState<CompanyBillingData | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all');
+  const [selectedCompanyDetails, setSelectedCompanyDetails] = useState<CompanyBillingData | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('billing');
 
   const dateRange = useMemo(() => getDateRange(period), [period]);
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['billing', 'all-companies', dateRange.start, dateRange.end],
-    queryFn: () => billingService.getAllCompaniesUsage(dateRange.start, dateRange.end),
+  // Fetch companies list for dropdown
+  const { data: companiesData } = useQuery({
+    queryKey: ['companies', 'billing-filter'],
+    queryFn: () => companyService.getAll({ limit: 1000 }),
     retry: false,
   });
 
+  const companies = companiesData?.companies || [];
+
+  // Fetch billing data - all companies or specific company
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['billing', selectedCompanyId === 'all' ? 'all-companies' : 'company', selectedCompanyId, dateRange.start, dateRange.end],
+    queryFn: async () => {
+      if (selectedCompanyId === 'all') {
+        return billingService.getAllCompaniesUsage(dateRange.start, dateRange.end);
+      } else {
+        // Fetch single company usage
+        const usage = await billingService.getCompanyUsage(selectedCompanyId, dateRange.start, dateRange.end);
+        // Transform to match AllCompaniesUsageReport structure for consistency
+        return {
+          company_id: usage.company_id,
+          company_name: usage.company_name,
+          period: usage.period,
+          usage: usage.usage,
+          companies: usage.usage.map(u => ({
+            company: {
+              id: usage.company_id,
+              name: usage.company_name,
+              email: null,
+            },
+            usage: {
+              api_requests: u.api_requests,
+              s3_storage_bytes: u.s3_storage_bytes,
+              s3_storage_gb: u.s3_storage_gb,
+              s3_requests: u.s3_requests,
+            },
+            costs: {
+              ec2: u.ec2_cost,
+              s3: u.s3_cost,
+              data_transfer: u.data_transfer_cost,
+              total: u.total_cost,
+            },
+            period: {
+              start: u.period_start,
+              end: u.period_end,
+            },
+          })),
+          total_companies: 1,
+          total_api_requests: usage.usage.reduce((sum, u) => sum + u.api_requests, 0),
+          total_s3_storage_bytes: usage.usage.reduce((sum, u) => sum + u.s3_storage_bytes, 0),
+          total_s3_storage_gb: usage.usage.reduce((sum, u) => sum + parseFloat(u.s3_storage_gb), 0).toFixed(4),
+          total_costs: {
+            ec2: usage.usage.reduce((sum, u) => sum + u.ec2_cost, 0),
+            s3: usage.usage.reduce((sum, u) => sum + u.s3_cost, 0),
+            data_transfer: usage.usage.reduce((sum, u) => sum + u.data_transfer_cost, 0),
+            total: usage.usage.reduce((sum, u) => sum + u.total_cost, 0),
+          },
+          generated_at: new Date().toISOString(),
+        } as AllCompaniesUsageReport;
+      }
+    },
+    retry: false,
+  });
+
+  // Fetch CloudWatch metrics - all companies or specific company
   const {
     data: cloudWatchData,
     isLoading: isCloudWatchLoading,
     error: cloudWatchError,
     refetch: refetchCloudWatch,
   } = useQuery({
-    queryKey: ['cloudwatch', 'all-companies', dateRange.start, dateRange.end],
-    queryFn: () => billingService.getAllCompaniesCloudWatchMetrics(dateRange.start, dateRange.end),
+    queryKey: ['cloudwatch', selectedCompanyId === 'all' ? 'all-companies' : 'company', selectedCompanyId, dateRange.start, dateRange.end],
+    queryFn: async () => {
+      if (selectedCompanyId === 'all') {
+        return billingService.getAllCompaniesCloudWatchMetrics(dateRange.start, dateRange.end);
+      } else {
+        // Fetch single company CloudWatch metrics
+        const metrics = await billingService.getCompanyCloudWatchMetrics(selectedCompanyId, dateRange.start, dateRange.end);
+        // Transform to match AllCompaniesCloudWatchMetrics structure
+        return {
+          period: metrics.period,
+          companies: [{
+            company: metrics.company,
+            companyId: metrics.companyId,
+            period: metrics.period,
+            ec2: metrics.ec2,
+            s3: metrics.s3,
+            fetchedAt: metrics.fetchedAt,
+            error: metrics.error,
+            errors: metrics.errors,
+            warnings: metrics.warnings,
+          }],
+          generatedAt: metrics.fetchedAt,
+          summary: {
+            total: 1,
+            success: metrics.error ? 0 : 1,
+            errors: metrics.error ? 1 : 0,
+          },
+        } as AllCompaniesCloudWatchMetrics;
+      }
+    },
     retry: false,
     enabled: activeTab === 'metrics', // Only fetch when metrics tab is active
   });
@@ -215,9 +306,16 @@ export function Billing() {
   }, [report.companies]);
 
   const handleViewDetails = (company: CompanyBillingData) => {
-    setSelectedCompany(company);
+    setSelectedCompanyDetails(company);
     setIsDetailsOpen(true);
   };
+
+  // Get selected company name for display
+  const selectedCompanyName = useMemo(() => {
+    if (selectedCompanyId === 'all') return 'All Companies';
+    const company = companies.find(c => c.id === selectedCompanyId);
+    return company?.name || 'Unknown Company';
+  }, [selectedCompanyId, companies]);
 
   const handleExportCSV = () => {
     if (!report.companies) return;
@@ -258,36 +356,39 @@ export function Billing() {
     window.URL.revokeObjectURL(url);
   };
 
-  const statsCards = [
-    {
-      title: 'Total AWS Costs',
-      value: formatCurrency(summaryStats.totalCost),
-      icon: DollarSign,
-      change: '+0%',
-      gradient: 'from-blue-500 to-cyan-500',
-    },
-    {
-      title: 'Total S3 Storage',
-      value: formatStorage(summaryStats.totalStorage),
-      icon: Database,
-      change: '+0%',
-      gradient: 'from-green-500 to-emerald-500',
-    },
-    {
-      title: 'Total API Requests',
-      value: formatNumber(summaryStats.totalRequests),
-      icon: Activity,
-      change: '+0%',
-      gradient: 'from-purple-500 to-pink-500',
-    },
-    {
-      title: 'Average Cost per Company',
-      value: formatCurrency(summaryStats.averageCost),
-      icon: TrendingUp,
-      change: '+0%',
-      gradient: 'from-orange-500 to-amber-500',
-    },
-  ];
+  const statsCards = useMemo(() => {
+    const isSingleCompany = selectedCompanyId !== 'all';
+    return [
+      {
+        title: isSingleCompany ? 'Total AWS Costs' : 'Total AWS Costs',
+        value: formatCurrency(summaryStats.totalCost),
+        icon: DollarSign,
+        change: '+0%',
+        gradient: 'from-blue-500 to-cyan-500',
+      },
+      {
+        title: isSingleCompany ? 'S3 Storage' : 'Total S3 Storage',
+        value: formatStorage(summaryStats.totalStorage),
+        icon: Database,
+        change: '+0%',
+        gradient: 'from-green-500 to-emerald-500',
+      },
+      {
+        title: isSingleCompany ? 'API Requests' : 'Total API Requests',
+        value: formatNumber(summaryStats.totalRequests),
+        icon: Activity,
+        change: '+0%',
+        gradient: 'from-purple-500 to-pink-500',
+      },
+      {
+        title: isSingleCompany ? 'Total Cost' : 'Average Cost per Company',
+        value: formatCurrency(isSingleCompany ? summaryStats.totalCost : summaryStats.averageCost),
+        icon: TrendingUp,
+        change: '+0%',
+        gradient: 'from-orange-500 to-amber-500',
+      },
+    ];
+  }, [summaryStats, selectedCompanyId]);
 
   const cloudWatchMetrics = cloudWatchData || ({} as AllCompaniesCloudWatchMetrics);
 
@@ -295,14 +396,33 @@ export function Billing() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Cost Tracking & Metrics
-          </h1>
-          <p className="text-slate-600 mt-2 text-lg">
-            AWS resource usage, costs, and CloudWatch metrics per company
-          </p>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Cost Tracking & Metrics
+            </h1>
+            <p className="text-slate-600 mt-2 text-lg">
+              AWS resource usage, costs, and CloudWatch metrics
+              {selectedCompanyId !== 'all' && (
+                <span className="font-semibold text-slate-800"> for {selectedCompanyName}</span>
+              )}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
+          <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+            <SelectTrigger className="w-[250px]">
+              <Building2 className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Select company" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Companies</SelectItem>
+              {companies.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="mr-2 h-4 w-4" />
@@ -407,49 +527,51 @@ export function Billing() {
 
           {/* Charts */}
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-                <CardTitle className="text-lg font-semibold text-slate-900">
-                  Costs by Company (Top 10)
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  Total AWS costs per company
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {costsByCompanyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={costsByCompanyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis
-                        dataKey="name"
-                        stroke="#64748b"
-                        style={{ fontSize: '12px' }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                      />
-                      <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'white',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        }}
-                        formatter={(value: number) => formatCurrency(value)}
-                      />
-                      <Legend />
-                      <Bar dataKey="cost" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-[300px] text-slate-500">
-                    No data available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {selectedCompanyId === 'all' && (
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                  <CardTitle className="text-lg font-semibold text-slate-900">
+                    Costs by Company (Top 10)
+                  </CardTitle>
+                  <CardDescription className="text-slate-600">
+                    Total AWS costs per company
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {costsByCompanyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={costsByCompanyData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          dataKey="name"
+                          stroke="#64748b"
+                          style={{ fontSize: '12px' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          }}
+                          formatter={(value: number) => formatCurrency(value)}
+                        />
+                        <Legend />
+                        <Bar dataKey="cost" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-slate-500">
+                      No data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="border-0 shadow-lg">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
@@ -458,6 +580,7 @@ export function Billing() {
                 </CardTitle>
                 <CardDescription className="text-slate-600">
                   Distribution of costs across AWS services
+                  {selectedCompanyId !== 'all' && ` for ${selectedCompanyName}`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
@@ -498,6 +621,7 @@ export function Billing() {
             </Card>
           </div>
 
+          {selectedCompanyId === 'all' && (
           <Card className="border-0 shadow-lg">
             <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
               <CardTitle className="text-lg font-semibold text-slate-900">
@@ -545,9 +669,13 @@ export function Billing() {
           {/* Companies Table */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Company Cost Breakdown</CardTitle>
+              <CardTitle>
+                {selectedCompanyId === 'all' ? 'Company Cost Breakdown' : `${selectedCompanyName} - Cost Breakdown`}
+              </CardTitle>
               <CardDescription>
-                Detailed AWS usage and costs for all companies
+                {selectedCompanyId === 'all' 
+                  ? 'Detailed AWS usage and costs for all companies'
+                  : `Detailed AWS usage and costs for ${selectedCompanyName}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -730,9 +858,14 @@ export function Billing() {
               {/* CloudWatch Metrics Table */}
               <Card className="border-0 shadow-lg">
                 <CardHeader>
-                  <CardTitle>CloudWatch Metrics by Company</CardTitle>
+                  <CardTitle>
+                    {selectedCompanyId === 'all' 
+                      ? 'CloudWatch Metrics by Company' 
+                      : `${selectedCompanyName} - CloudWatch Metrics`}
+                  </CardTitle>
                   <CardDescription>
                     Real-time AWS resource metrics from CloudWatch
+                    {selectedCompanyId !== 'all' && ` for ${selectedCompanyName}`}
                     {cloudWatchMetrics.summary && (
                       <span className="ml-2 text-xs">
                         ({cloudWatchMetrics.summary.success} successful, {cloudWatchMetrics.summary.errors} errors)
@@ -846,20 +979,26 @@ export function Billing() {
           <DialogHeader>
             <DialogTitle>Company Billing Details</DialogTitle>
             <DialogDescription>
-              Detailed AWS usage and cost breakdown for {selectedCompany?.company.name}
+              Detailed AWS usage and cost breakdown for {selectedCompanyDetails?.company.name}
             </DialogDescription>
           </DialogHeader>
-          {selectedCompany && (
+          {selectedCompanyDetails && (
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold mb-2">Company Information</h3>
                 <div className="space-y-1 text-sm">
                   <p>
-                    <span className="font-medium">Name:</span> {selectedCompany.company.name}
+                    <span className="font-medium">Name:</span> {selectedCompanyDetails.company.name}
                   </p>
                   <p>
-                    <span className="font-medium">Email:</span> {selectedCompany.company.email || 'N/A'}
+                    <span className="font-medium">Email:</span> {selectedCompanyDetails.company.email || 'N/A'}
                   </p>
+                  {selectedCompanyDetails.period && (
+                    <p>
+                      <span className="font-medium">Period:</span>{' '}
+                      {selectedCompanyDetails.period.start} to {selectedCompanyDetails.period.end}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
@@ -867,15 +1006,15 @@ export function Billing() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium">API Requests:</span>{' '}
-                    {formatNumber(selectedCompany.usage.api_requests)}
+                    {formatNumber(selectedCompanyDetails.usage.api_requests)}
                   </div>
                   <div>
                     <span className="font-medium">S3 Storage:</span>{' '}
-                    {selectedCompany.usage.s3_storage_gb} GB
+                    {selectedCompanyDetails.usage.s3_storage_gb} GB
                   </div>
                   <div>
                     <span className="font-medium">S3 Requests:</span>{' '}
-                    {formatNumber(selectedCompany.usage.s3_requests)}
+                    {formatNumber(selectedCompanyDetails.usage.s3_requests)}
                   </div>
                 </div>
               </div>
@@ -884,21 +1023,21 @@ export function Billing() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>EC2 Costs:</span>
-                    <span className="font-medium">{formatCurrency(selectedCompany.costs.ec2)}</span>
+                    <span className="font-medium">{formatCurrency(selectedCompanyDetails.costs.ec2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>S3 Costs:</span>
-                    <span className="font-medium">{formatCurrency(selectedCompany.costs.s3)}</span>
+                    <span className="font-medium">{formatCurrency(selectedCompanyDetails.costs.s3)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Data Transfer Costs:</span>
                     <span className="font-medium">
-                      {formatCurrency(selectedCompany.costs.data_transfer)}
+                      {formatCurrency(selectedCompanyDetails.costs.data_transfer)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2 font-semibold">
                     <span>Total Cost:</span>
-                    <span>{formatCurrency(selectedCompany.costs.total)}</span>
+                    <span>{formatCurrency(selectedCompanyDetails.costs.total)}</span>
                   </div>
                 </div>
               </div>
@@ -909,4 +1048,5 @@ export function Billing() {
     </div>
   );
 }
+
 
