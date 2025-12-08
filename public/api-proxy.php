@@ -19,8 +19,15 @@
 $API_BASE_URL = getenv('API_BASE_URL');
 
 if (!$API_BASE_URL) {
-    // Use IP address directly (backend server)
-    $API_BASE_URL = 'http://98.92.75.163:3000/api/v1';
+    // Use domain-based URL with HTTPS (SSL is now set up!)
+    // api.dreamtobuy.com DNS points to 98.92.75.163 and SSL certificate is installed
+    $API_BASE_URL = 'https://api.dreamtobuy.com/api/v1';
+    
+    // Fallback options (not needed now, but kept for reference):
+    // Option 2: Use domain with HTTP (if SSL not set up)
+    // $API_BASE_URL = 'http://api.dreamtobuy.com:3000/api/v1';
+    // Option 3: Use IP address directly (fallback)
+    // $API_BASE_URL = 'http://98.92.75.163:3000/api/v1';
 }
 
 // Get the path from query parameter (passed by .htaccess rewrite rule)
@@ -127,6 +134,7 @@ $curl_options = [
     CURLOPT_SSL_VERIFYPEER => false,
     CURLOPT_SSL_VERIFYHOST => false,
     CURLOPT_TIMEOUT => 30,
+    CURLOPT_ENCODING => '', // Accept compressed responses but don't auto-decompress (we'll handle it)
 ];
 
 // For POST, PUT, PATCH requests, set the body
@@ -190,8 +198,45 @@ if ($response === false || empty($response)) {
 $response_headers = substr($response, 0, $header_size);
 $response_body = substr($response, $header_size);
 
-// Parse and forward response headers
+// Check if response is compressed (gzip or deflate)
+$is_gzip = false;
+$is_deflate = false;
+$content_encoding = '';
+
+// Parse response headers to check for compression
 $header_lines = explode("\r\n", $response_headers);
+foreach ($header_lines as $header_line) {
+    if (empty($header_line)) continue;
+    
+    $header_parts = explode(':', $header_line, 2);
+    if (count($header_parts) === 2) {
+        $header_name = strtolower(trim($header_parts[0]));
+        $header_value = trim($header_parts[1]);
+        
+        if ($header_name === 'content-encoding') {
+            $content_encoding = strtolower($header_value);
+            if (strpos($content_encoding, 'gzip') !== false) {
+                $is_gzip = true;
+            } elseif (strpos($content_encoding, 'deflate') !== false) {
+                $is_deflate = true;
+            }
+        }
+    }
+}
+
+// Decompress response body if needed
+if ($is_gzip && function_exists('gzdecode')) {
+    $response_body = gzdecode($response_body);
+    if ($response_body === false) {
+        // If decompression fails, try gzinflate (for deflate format)
+        $response_body = substr($response, $header_size);
+        $response_body = @gzinflate(substr($response_body, 10));
+    }
+} elseif ($is_deflate && function_exists('gzinflate')) {
+    $response_body = gzinflate($response_body);
+}
+
+// Parse and forward response headers (excluding compression-related headers)
 foreach ($header_lines as $header_line) {
     if (empty($header_line)) continue;
     
@@ -200,17 +245,23 @@ foreach ($header_lines as $header_line) {
         $header_name = trim($header_parts[0]);
         $header_value = trim($header_parts[1]);
         
-        // Skip certain headers
-        if (!in_array(strtolower($header_name), ['transfer-encoding', 'connection', 'content-encoding'])) {
+        // Skip headers that shouldn't be forwarded
+        $skip_headers = ['transfer-encoding', 'connection', 'content-encoding', 'content-length'];
+        if (!in_array(strtolower($header_name), $skip_headers)) {
             header("$header_name: $header_value");
         }
     }
 }
 
+// Set correct Content-Length for decompressed body
+if ($is_gzip || $is_deflate) {
+    header('Content-Length: ' . strlen($response_body));
+}
+
 // Set HTTP status code
 http_response_code($http_code);
 
-// Output response body
+// Output response body (now decompressed)
 echo $response_body;
 ?>
 
