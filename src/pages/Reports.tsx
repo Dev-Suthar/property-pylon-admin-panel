@@ -529,7 +529,7 @@ export function Reports() {
                           {downloadMutation.isPending && downloadingReportId === report.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Download className="h-4 w-4" />
+                        <Download className="h-4 w-4" />
                           )}
                         </Button>
                         <Button
@@ -557,7 +557,7 @@ export function Reports() {
                           ) : (
                             <FileText className="h-4 w-4" />
                           )}
-                        </Button>
+                      </Button>
                       </div>
                     </TableCell>
                   </TableRow>
