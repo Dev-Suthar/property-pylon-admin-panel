@@ -12,7 +12,6 @@ import {
   FileCode2,
   Smartphone,
   DollarSign,
-  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +27,6 @@ const menuItems = [
   { icon: Activity, label: 'Activity Logs', path: '/activity' },
   { icon: FileText, label: 'Reports', path: '/reports' },
   { icon: Smartphone, label: 'App Versions', path: '/app-versions' },
-  { icon: Database, label: 'Database Viewer', path: '/database' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
@@ -45,7 +43,7 @@ export function Sidebar() {
             <Building2 className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">Property Pylon</h1>
+            <h1 className="text-lg font-bold text-white">DreamToBuy</h1>
             <span className="text-xs text-blue-100">Admin Portal</span>
           </div>
         </div>

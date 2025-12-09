@@ -19,7 +19,6 @@ import { Settings } from './pages/Settings';
 import { Salesmen } from './pages/Salesmen';
 import { AppVersions } from './pages/AppVersions';
 import { Billing } from './pages/Billing';
-import { Database } from './pages/Database';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -184,16 +183,6 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <AppVersions />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/database"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Database />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -1,5 +1,19 @@
 import { apiClient, handleApiError } from '@/lib/api';
 
+export interface Company {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  period: string;
+  features?: string[];
+}
+
 export interface Subscription {
   id: string;
   company_id: string;
@@ -8,10 +22,14 @@ export interface Subscription {
   status: string;
   start_date: string;
   end_date?: string;
+  renewal_date?: string;
   price: number;
   billing_cycle: string;
+  features?: string[];
   created_at: string;
   updated_at: string;
+  Company?: Company;
+  SubscriptionPlan?: SubscriptionPlan;
 }
 
 export interface SubscriptionsResponse {

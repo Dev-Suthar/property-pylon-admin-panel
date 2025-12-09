@@ -8,7 +8,7 @@ import { getApiBaseUrl, getEnvironmentConfig, getGoogleMapsApiKey } from './envi
 const envConfig = getEnvironmentConfig();
 
 export const CONFIG = {
-  APP_NAME: 'Property Pylon',
+  APP_NAME: 'DreamToBuy',
   APP_VERSION: '1.0.0',
   API_BASE_URL: getApiBaseUrl(),
   API_VERSION: 'v1',

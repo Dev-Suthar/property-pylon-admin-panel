@@ -665,6 +665,7 @@ export function Billing() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Companies Table */}
           <Card className="border-0 shadow-lg">

@@ -11,7 +11,6 @@
     "proxy": "node proxy-server.js",
     "proxy:prod": "NODE_ENV=production node proxy-server.js",
     "dev:with-proxy": "concurrently \"npm run proxy\" \"npm run dev\"",
-    "test:proxy": "node test-proxy.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

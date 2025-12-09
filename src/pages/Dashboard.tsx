@@ -102,7 +102,7 @@ export function Dashboard() {
           Dashboard
         </h1>
         <p className="text-slate-600 mt-2 text-lg">
-          Overview of your Property Pylon system
+          Overview of your DreamToBuy system
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import {
   TrendingUp,
   Building2,
   Home,
+  Loader2,
 } from "lucide-react";
 import { reportService } from "@/services/reportService";
 import { useToast } from "@/hooks/use-toast";
@@ -56,58 +57,37 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const mockReports = [
-  {
-    id: "1",
-    report_type: "company_growth",
-    title: "Company Growth Report - Q2 2024",
-    data: { companies: 24, growth: 12 },
-    generated_at: "2024-06-15T10:00:00Z",
-    generated_by: "Admin User",
-  },
-  {
-    id: "2",
-    report_type: "revenue",
-    title: "Revenue Report - May 2024",
-    data: { revenue: 35000, mrr: 35000 },
-    generated_at: "2024-06-01T09:00:00Z",
-    generated_by: "Admin User",
-  },
-];
-
-const mockReportData = {
-  company_growth: [
-    { month: "Jan", companies: 20 },
-    { month: "Feb", companies: 22 },
-    { month: "Mar", companies: 21 },
-    { month: "Apr", companies: 23 },
-    { month: "May", companies: 24 },
-    { month: "Jun", companies: 24 },
-  ],
-  revenue: [
-    { month: "Jan", revenue: 24000 },
-    { month: "Feb", revenue: 26000 },
-    { month: "Mar", revenue: 28000 },
-    { month: "Apr", revenue: 30000 },
-    { month: "May", revenue: 32000 },
-    { month: "Jun", revenue: 35000 },
-  ],
-  subscription_distribution: [
-    { name: "Basic", value: 8, color: "#8884d8" },
-    { name: "Professional", value: 12, color: "#82ca9d" },
-    { name: "Enterprise", value: 4, color: "#ffc658" },
-  ],
-};
-
 export function Reports() {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [reportType, setReportType] = useState("company_growth");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data, error } = useQuery({
+  // Fetch reports list
+  const { data: reportsData, error: reportsError, isLoading: reportsLoading, refetch: refetchReports } = useQuery({
     queryKey: ["reports"],
     queryFn: () => reportService.getAll({ page: 1, limit: 10 }),
-    retry: false,
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+  });
+
+  // Fetch stats
+  const { data: stats, error: statsError, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ["report-stats"],
+    queryFn: () => reportService.getStats(),
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 60000, // Stats can be cached longer
+  });
+
+  // Fetch analytics
+  const { data: analytics, error: analyticsError, isLoading: analyticsLoading, refetch: refetchAnalytics } = useQuery({
+    queryKey: ["report-analytics"],
+    queryFn: () => reportService.getAnalytics(),
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000,
   });
 
   const generateMutation = useMutation({
@@ -119,30 +99,85 @@ export function Reports() {
         description: "Report generated successfully",
       });
       setIsGenerateDialogOpen(false);
+      setReportType("company_growth"); // Reset to default
+      // Refetch reports and stats
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["report-analytics"] });
     },
     onError: (error: Error) => {
+      const errorMessage = error.message || "Failed to generate report. Please try again.";
       toast({
         title: "Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
-  const reports = data?.reports || (error ? mockReports : []);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+
+  const downloadMutation = useMutation({
+    mutationFn: ({ id, format }: { id: string; format: 'json' | 'csv' }) => {
+      setDownloadingReportId(id);
+      return reportService.download(id, format);
+    },
+    onSuccess: (_, variables) => {
+      setDownloadingReportId(null);
+      toast({
+        title: "Success",
+        description: `Report downloaded as ${variables.format.toUpperCase()}`,
+      });
+    },
+    onError: (error: Error) => {
+      setDownloadingReportId(null);
+      const errorMessage = error.message || "Failed to download report. Please try again.";
+      toast({
+        title: "Download Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reports = reportsData?.reports || [];
+  const companyGrowthData = analytics?.company_growth || [];
+  const revenueData = analytics?.revenue || [];
+  const subscriptionDistribution = analytics?.subscription_distribution || [];
+
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Reports Data:', reportsData);
+    console.log('Stats:', stats);
+    console.log('Analytics:', analytics);
+    console.log('Company Growth Data:', companyGrowthData);
+    console.log('Revenue Data:', revenueData);
+    console.log('Subscription Distribution:', subscriptionDistribution);
+  }
 
   const handleGenerate = () => {
     generateMutation.mutate({ report_type: reportType });
   };
 
+  const handleDownload = (reportId: string, format: 'json' | 'csv' | 'pdf' = 'json') => {
+    downloadMutation.mutate({ id: reportId, format });
+  };
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-GB", {
+    try {
+      if (!dateString) return "Unknown";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid Date";
+      return date.toLocaleString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+    } catch (error) {
+      return "Invalid Date";
+    }
   };
 
   return (
@@ -206,11 +241,27 @@ export function Reports() {
         </Dialog>
       </div>
 
-      {error && (
-        <Alert>
+      {(reportsError || statsError || analyticsError) && (
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex items-center justify-between">
+            <div>
+              {reportsError && <div>Error loading reports: {reportsError.message || "Unknown error"}</div>}
+              {statsError && <div>Error loading stats: {statsError.message || "Unknown error"}</div>}
+              {analyticsError && <div>Error loading analytics: {analyticsError.message || "Unknown error"}</div>}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (reportsError) refetchReports();
+                if (statsError) refetchStats();
+                if (analyticsError) refetchAnalytics();
+              }}
+              className="ml-4"
+            >
+              Retry
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -222,7 +273,20 @@ export function Reports() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reports.length}</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : stats ? (
+                stats.total_reports
+              ) : statsError ? (
+                <span className="text-muted-foreground text-sm">Error</span>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </div>
+            {statsError && (
+              <p className="text-xs text-muted-foreground mt-1">Unable to load stats</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -231,7 +295,20 @@ export function Reports() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12%</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : stats ? (
+                stats.company_growth_percentage >= 0 ? `+${stats.company_growth_percentage.toFixed(1)}%` : `${stats.company_growth_percentage.toFixed(1)}%`
+              ) : statsError ? (
+                <span className="text-muted-foreground text-sm">Error</span>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </div>
+            {statsError && (
+              <p className="text-xs text-muted-foreground mt-1">Unable to load growth</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -240,7 +317,20 @@ export function Reports() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : stats ? (
+                stats.total_companies
+              ) : statsError ? (
+                <span className="text-muted-foreground text-sm">Error</span>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </div>
+            {statsError && (
+              <p className="text-xs text-muted-foreground mt-1">Unable to load count</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -249,7 +339,20 @@ export function Reports() {
             <Home className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5,678</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : stats ? (
+                stats.total_properties.toLocaleString()
+              ) : statsError ? (
+                <span className="text-muted-foreground text-sm">Error</span>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </div>
+            {statsError && (
+              <p className="text-xs text-muted-foreground mt-1">Unable to load count</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -261,8 +364,17 @@ export function Reports() {
             <CardDescription>New companies registered over time</CardDescription>
           </CardHeader>
           <CardContent>
+            {analyticsLoading || !companyGrowthData.length ? (
+              <div className="flex items-center justify-center h-[300px]">
+                {analyticsLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <p className="text-muted-foreground">No data available</p>
+                )}
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockReportData.company_growth}>
+                <LineChart data={companyGrowthData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -276,6 +388,7 @@ export function Reports() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -285,10 +398,19 @@ export function Reports() {
             <CardDescription>Companies by subscription plan</CardDescription>
           </CardHeader>
           <CardContent>
+            {analyticsLoading || !subscriptionDistribution.length ? (
+              <div className="flex items-center justify-center h-[300px]">
+                {analyticsLoading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <p className="text-muted-foreground">No data available</p>
+                )}
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={mockReportData.subscription_distribution}
+                    data={subscriptionDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -299,13 +421,14 @@ export function Reports() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {mockReportData.subscription_distribution.map((entry, index) => (
+                    {subscriptionDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -316,8 +439,17 @@ export function Reports() {
           <CardDescription>Monthly recurring revenue (MRR)</CardDescription>
         </CardHeader>
         <CardContent>
+          {analyticsLoading || !revenueData.length ? (
+            <div className="flex items-center justify-center h-[300px]">
+              {analyticsLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              ) : (
+                <p className="text-muted-foreground">No data available</p>
+              )}
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={mockReportData.revenue}>
+              <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
@@ -326,6 +458,7 @@ export function Reports() {
               <Bar dataKey="revenue" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -335,9 +468,32 @@ export function Reports() {
           <CardDescription>View and download previously generated reports</CardDescription>
         </CardHeader>
         <CardContent>
-          {reports.length === 0 ? (
+          {reportsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : reportsError ? (
+            <div className="text-center py-8">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load reports: {reportsError.message || "Unknown error"}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchReports()}
+                    className="ml-4"
+                  >
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : reports.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No reports generated yet
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No reports generated yet</p>
+              <p className="text-sm mt-2">Click "Generate Report" to create your first report</p>
             </div>
           ) : (
             <Table>
@@ -362,9 +518,47 @@ export function Reports() {
                     <TableCell>{report.generated_by}</TableCell>
                     <TableCell>{formatDate(report.generated_at)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(report.id, 'json')}
+                          disabled={downloadMutation.isPending && downloadingReportId === report.id}
+                          title="Download as JSON"
+                        >
+                          {downloadMutation.isPending && downloadingReportId === report.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(report.id, 'csv')}
+                          disabled={downloadMutation.isPending && downloadingReportId === report.id}
+                          title="Download as CSV"
+                        >
+                          {downloadMutation.isPending && downloadingReportId === report.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(report.id, 'pdf')}
+                          disabled={downloadMutation.isPending && downloadingReportId === report.id}
+                          title="Download as PDF"
+                        >
+                          {downloadMutation.isPending && downloadingReportId === report.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

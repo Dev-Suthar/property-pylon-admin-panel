@@ -50,54 +50,71 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { subscriptionService, Subscription } from "@/services/subscriptionService";
+import {
+  subscriptionPlanService,
+  SubscriptionPlan,
+} from "@/services/subscriptionPlanService";
 import { formatPriceWithCurrency } from "@/utils/priceUtils";
+import { PlanDetailsDrawer } from "@/components/PlanDetailsDrawer";
 
-const mockSubscriptions: Subscription[] = [
+const mockPlans: SubscriptionPlan[] = [
   {
     id: "1",
-    company_id: "1",
-    plan_id: "1",
-    plan_name: "Professional",
-    status: "active",
-    start_date: "2024-01-01T00:00:00Z",
-    end_date: "2024-12-31T00:00:00Z",
-    price: 9999,
-    billing_cycle: "monthly",
+    name: "Basic Plan",
+    price: 4999,
+    period: "monthly",
+    features: ["Up to 50 properties", "Up to 100 customers"],
+    popular: false,
+    max_properties: 50,
+    max_customers: 100,
+    is_active: true,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
   {
     id: "2",
-    company_id: "2",
-    plan_id: "2",
-    plan_name: "Enterprise",
-    status: "active",
-    start_date: "2024-02-01T00:00:00Z",
-    end_date: "2025-01-31T00:00:00Z",
-    price: 19999,
-    billing_cycle: "monthly",
-    created_at: "2024-02-01T00:00:00Z",
-    updated_at: "2024-02-01T00:00:00Z",
+    name: "Professional Plan",
+    price: 9999,
+    period: "monthly",
+    features: [
+      "Up to 200 properties",
+      "Up to 500 customers",
+      "Priority support",
+    ],
+    popular: true,
+    max_properties: 200,
+    max_customers: 500,
+    is_active: true,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
   },
   {
     id: "3",
-    company_id: "3",
-    plan_id: "3",
-    plan_name: "Basic",
-    status: "cancelled",
-    start_date: "2024-03-01T00:00:00Z",
-    price: 4999,
-    billing_cycle: "monthly",
-    created_at: "2024-03-01T00:00:00Z",
-    updated_at: "2024-03-15T00:00:00Z",
+    name: "Enterprise Plan",
+    price: 19999,
+    period: "monthly",
+    features: [
+      "Unlimited properties",
+      "Unlimited customers",
+      "Priority support",
+      "Custom integrations",
+    ],
+    popular: false,
+    max_properties: undefined,
+    max_customers: undefined,
+    is_active: true,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
   },
 ];
 
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="h-20 animate-pulse rounded-xl bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100" />
+      <div
+        key={i}
+        className="h-20 animate-pulse rounded-xl bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100"
+      />
     ))}
   </div>
 );
@@ -107,14 +124,17 @@ const EmptyState = () => (
     <div className="mb-6 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 p-8 shadow-lg">
       <CreditCard className="h-16 w-16 text-emerald-600" />
     </div>
-    <h3 className="mb-2 text-xl font-bold text-slate-900">No subscriptions found</h3>
+    <h3 className="mb-2 text-xl font-bold text-slate-900">
+      No subscription plans found
+    </h3>
     <p className="mb-6 text-center text-sm text-slate-500 max-w-sm">
-      No subscriptions match your search criteria.
+      No subscription plans match your search criteria. Create a new plan to get
+      started.
     </p>
   </div>
 );
 
-type SortField = "plan_name" | "price" | "created_at" | null;
+type SortField = "name" | "price" | "created_at" | null;
 type SortDirection = "asc" | "desc" | null;
 
 export function Subscriptions() {
@@ -123,40 +143,50 @@ export function Subscriptions() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
+    null
+  );
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const limit = 10;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["subscriptions", page, limit, searchQuery, statusFilter],
+    queryKey: ["subscription-plans", page, limit, searchQuery, statusFilter],
     queryFn: () =>
-      subscriptionService.getAll({
+      subscriptionPlanService.getAll({
         page,
         limit,
         search: searchQuery,
-        status: statusFilter !== "all" ? statusFilter : undefined,
+        is_active:
+          statusFilter !== "all" ? statusFilter === "active" : undefined,
       }),
     retry: false,
     placeholderData: (previousData) => previousData,
   });
 
-  const subscriptions = useMemo(() => {
-    const rawSubscriptions = data?.subscriptions || (error ? mockSubscriptions : []);
+  const plans = useMemo(() => {
+    const rawPlans = data?.plans || (error ? mockPlans : []);
     const uniqueMap = new Map();
-    rawSubscriptions.forEach((subscription: Subscription) => {
-      if (subscription.id && !uniqueMap.has(subscription.id)) {
-        uniqueMap.set(subscription.id, subscription);
+    rawPlans.forEach((plan: SubscriptionPlan) => {
+      if (plan.id && !uniqueMap.has(plan.id)) {
+        uniqueMap.set(plan.id, plan);
       }
     });
     return Array.from(uniqueMap.values());
-  }, [data?.subscriptions, error]);
+  }, [data?.plans, error]);
 
-  const sortedSubscriptions = useMemo(() => {
-    if (!sortField) return subscriptions;
-    return [...subscriptions].sort((a, b) => {
-      let aValue: any = a[sortField as keyof Subscription];
-      let bValue: any = b[sortField as keyof Subscription];
+  // Client-side sorting
+  const sortedPlans = useMemo(() => {
+    if (!sortField) return plans;
+    return [...plans].sort((a, b) => {
+      let aValue: any = a[sortField as keyof SubscriptionPlan];
+      let bValue: any = b[sortField as keyof SubscriptionPlan];
       if (sortField === "created_at" || sortField === "price") {
-        aValue = sortField === "price" ? (aValue || 0) : new Date(aValue).getTime();
-        bValue = sortField === "price" ? (bValue || 0) : new Date(bValue).getTime();
+        aValue =
+          sortField === "price" ? aValue || 0 : new Date(aValue).getTime();
+        bValue =
+          sortField === "price" ? bValue || 0 : new Date(bValue).getTime();
       } else if (typeof aValue === "string") {
         aValue = aValue.toLowerCase();
         bValue = (bValue || "").toLowerCase();
@@ -165,15 +195,12 @@ export function Subscriptions() {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [subscriptions, sortField, sortDirection]);
+  }, [plans, sortField, sortDirection]);
 
-  const paginatedSubscriptions = useMemo(() => {
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    return sortedSubscriptions.slice(start, end);
-  }, [sortedSubscriptions, page, limit]);
+  // Use backend pagination - plans are already paginated from the API
+  const displayPlans = sortedPlans;
 
-  const total = data?.total || subscriptions.length;
+  const total = data?.total || plans.length;
   const totalPages = Math.ceil(total / limit);
 
   const handleSort = (field: SortField) => {
@@ -206,26 +233,8 @@ export function Subscriptions() {
     return formatPriceWithCurrency(amount, true); // Use converter format (K, L, Cr)
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "active":
-        return "success";
-      case "cancelled":
-        return "secondary";
-      case "expired":
-        return "destructive";
-      default:
-        return "secondary";
-    }
+  const getStatusBadgeVariant = (isActive: boolean) => {
+    return isActive ? "success" : "secondary";
   };
 
   return (
@@ -234,16 +243,23 @@ export function Subscriptions() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Subscriptions</h1>
           <p className="text-muted-foreground">
-            Manage subscription plans and company subscriptions
+            Manage subscription plans available in the mobile application
           </p>
         </div>
+        <Button
+          onClick={() => setIsCreateSheetOpen(true)}
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Add Plan
+        </Button>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder="Search subscriptions..."
+            placeholder="Search plans..."
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setSearchQuery(e.target.value);
@@ -252,15 +268,20 @@ export function Subscriptions() {
             className="pl-11 h-10 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all duration-200"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="w-[180px] h-10 rounded-xl border-slate-200 bg-white">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -278,7 +299,7 @@ export function Subscriptions() {
         <div className="rounded-xl border-0 bg-white shadow-lg p-4">
           <TableSkeleton />
         </div>
-      ) : subscriptions.length === 0 ? (
+      ) : plans.length === 0 ? (
         <div className="rounded-xl border-0 bg-white shadow-lg">
           <EmptyState />
         </div>
@@ -290,17 +311,12 @@ export function Subscriptions() {
                 <TableRow className="hover:bg-transparent border-b-2 border-gray-100">
                   <TableHead className="sticky top-0 z-10 bg-white">
                     <button
-                      onClick={() => handleSort("plan_name")}
+                      onClick={() => handleSort("name")}
                       className="flex items-center font-semibold uppercase tracking-wide text-xs text-gray-600 hover:text-gray-900 transition-colors"
                     >
                       Plan Name
-                      {getSortIcon("plan_name")}
+                      {getSortIcon("name")}
                     </button>
-                  </TableHead>
-                  <TableHead className="sticky top-0 z-10 bg-white hidden md:table-cell">
-                    <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
-                      Company
-                    </span>
                   </TableHead>
                   <TableHead className="sticky top-0 z-10 bg-white hidden lg:table-cell">
                     <button
@@ -311,19 +327,19 @@ export function Subscriptions() {
                       {getSortIcon("price")}
                     </button>
                   </TableHead>
-                  <TableHead className="sticky top-0 z-10 bg-white hidden lg:table-cell">
+                  <TableHead className="sticky top-0 z-10 bg-white hidden md:table-cell">
                     <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
-                      Billing Cycle
+                      Period
+                    </span>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-white hidden xl:table-cell">
+                    <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
+                      Features
                     </span>
                   </TableHead>
                   <TableHead className="sticky top-0 z-10 bg-white">
                     <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
                       Status
-                    </span>
-                  </TableHead>
-                  <TableHead className="sticky top-0 z-10 bg-white hidden xl:table-cell">
-                    <span className="font-semibold uppercase tracking-wide text-xs text-gray-600">
-                      Start Date
                     </span>
                   </TableHead>
                   <TableHead className="sticky top-0 z-10 bg-white text-right">
@@ -334,35 +350,53 @@ export function Subscriptions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedSubscriptions.map((subscription) => (
+                {displayPlans.map((plan) => (
                   <TableRow
-                    key={subscription.id}
-                    className="cursor-pointer transition-all duration-200"
+                    key={plan.id}
+                    className="cursor-pointer transition-all duration-200 hover:bg-slate-50"
+                    onClick={() => {
+                      setSelectedPlan(plan);
+                      setIsDrawerOpen(true);
+                    }}
                   >
                     <TableCell className="font-semibold text-gray-900">
-                      {subscription.plan_name}
-                    </TableCell>
-                    <TableCell className="text-gray-600 hidden md:table-cell">
-                      Company ID: {subscription.company_id.substring(0, 8)}...
+                      <div className="flex items-center gap-2">
+                        {plan.name}
+                        {plan.popular && (
+                          <Badge variant="default" className="text-xs">
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-gray-600 hidden lg:table-cell font-medium">
-                      {formatCurrency(subscription.price)}/{subscription.billing_cycle}
+                      {formatCurrency(plan.price)}/{plan.period}
                     </TableCell>
-                    <TableCell className="text-gray-600 hidden lg:table-cell capitalize">
-                      {subscription.billing_cycle}
+                    <TableCell className="text-gray-600 hidden md:table-cell capitalize">
+                      {plan.period}
+                    </TableCell>
+                    <TableCell className="text-gray-600 text-sm hidden xl:table-cell">
+                      {plan.features && plan.features.length > 0 ? (
+                        <span className="text-xs">
+                          {plan.features.length} feature
+                          {plan.features.length !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={getStatusBadgeVariant(subscription.status)}
+                        variant={getStatusBadgeVariant(plan.is_active)}
                         className="font-medium px-2.5 py-0.5 text-xs min-w-[70px] justify-center capitalize"
                       >
-                        {subscription.status}
+                        {plan.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-gray-600 text-sm hidden xl:table-cell">
-                      {formatDate(subscription.start_date)}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <TableCell
+                      className="text-right"
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    >
                       <TooltipProvider>
                         <DropdownMenu>
                           <Tooltip>
@@ -383,11 +417,25 @@ export function Subscriptions() {
                             </TooltipContent>
                           </Tooltip>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setSelectedPlan(plan);
+                                setIsDrawerOpen(true);
+                                setIsEditSheetOpen(false);
+                              }}
+                            >
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setSelectedPlan(plan);
+                                setIsDrawerOpen(true);
+                                setIsEditSheetOpen(true);
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
@@ -408,7 +456,11 @@ export function Subscriptions() {
                   <PaginationItem>
                     <PaginationPrevious
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={
+                        page === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
                   {[...Array(totalPages)].map((_, i) => {
@@ -440,8 +492,14 @@ export function Subscriptions() {
                   })}
                   <PaginationItem>
                     <PaginationNext
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className={
+                        page === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
                 </PaginationContent>
@@ -450,6 +508,23 @@ export function Subscriptions() {
           )}
         </div>
       )}
+
+      {/* Plan Details Drawer */}
+      <PlanDetailsDrawer
+        plan={selectedPlan}
+        open={isDrawerOpen}
+        onOpenChange={(open) => {
+          setIsDrawerOpen(open);
+          if (!open) {
+            setIsEditSheetOpen(false);
+            setSelectedPlan(null);
+          }
+        }}
+        openEditSheet={isEditSheetOpen}
+        onEditSheetOpenChange={setIsEditSheetOpen}
+        isCreateMode={isCreateSheetOpen}
+        onCreateModeChange={setIsCreateSheetOpen}
+      />
     </div>
   );
 }

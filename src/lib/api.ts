@@ -68,6 +68,11 @@ class ApiClient {
     // Response interceptor for error handling (matching mobile app behavior)
     this.client.interceptors.response.use(
       (response) => {
+        // For blob responses, always return them (let the caller handle status codes)
+        if (response.config.responseType === 'blob') {
+          return response;
+        }
+        
         // Handle non-OK responses similar to mobile app
         if (response.status >= 200 && response.status < 300) {
           return response;

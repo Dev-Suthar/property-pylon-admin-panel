@@ -57,7 +57,7 @@ export function Login() {
           </div>
           <CardTitle className="text-3xl font-bold text-white">Admin Panel</CardTitle>
           <CardDescription className="text-blue-100">
-            Sign in to access the Property Pylon admin dashboard
+            Sign in to access the DreamToBuy admin dashboard
           </CardDescription>
         </CardHeader>
         <CardContent className="p-8">

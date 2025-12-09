@@ -42,6 +42,13 @@ const SelectContent = React.forwardRef<
         className
       )}
       position={position}
+      onCloseAutoFocus={(e) => {
+        // Prevent focus from being trapped when used inside modals/drawers
+        const isInsideModal = e.currentTarget.closest('[role="dialog"]') !== null;
+        if (isInsideModal) {
+          e.preventDefault();
+        }
+      }}
       {...props}
     >
       <SelectPrimitive.Viewport
