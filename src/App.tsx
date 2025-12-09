@@ -1,24 +1,28 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/toaster';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { Companies } from './pages/Companies';
-import { Users } from './pages/Users';
-import { Properties } from './pages/Properties';
-import { Customers } from './pages/Customers';
-import { Subscriptions } from './pages/Subscriptions';
-import { PushNotifications } from './pages/PushNotifications';
-import { NotificationTemplates } from './pages/NotificationTemplates';
-import { Activity } from './pages/Activity';
-import { Reports } from './pages/Reports';
-import { Settings } from './pages/Settings';
-import { Salesmen } from './pages/Salesmen';
-import { AppVersions } from './pages/AppVersions';
-import { Billing } from './pages/Billing';
+import { Loading } from './components/ui/loading';
+
+// Lazy load pages for code splitting
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Companies = lazy(() => import('./pages/Companies'));
+const Users = lazy(() => import('./pages/Users'));
+const Properties = lazy(() => import('./pages/Properties'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Subscriptions = lazy(() => import('./pages/Subscriptions'));
+const PushNotifications = lazy(() => import('./pages/PushNotifications'));
+const NotificationTemplates = lazy(() => import('./pages/NotificationTemplates'));
+const Activity = lazy(() => import('./pages/Activity'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Salesmen = lazy(() => import('./pages/Salesmen'));
+const AppVersions = lazy(() => import('./pages/AppVersions'));
+const Billing = lazy(() => import('./pages/Billing'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,13 +34,21 @@ const queryClient = new QueryClient({
   },
 });
 
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Loading />
+  </div>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
             <Route
               path="/"
               element={
@@ -187,7 +199,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
         <Toaster />
       </AuthProvider>

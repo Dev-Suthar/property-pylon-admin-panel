@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "proxy": "node proxy-server.js",
     "proxy:prod": "NODE_ENV=production node proxy-server.js",
-    "dev:with-proxy": "concurrently \"npm run proxy\" \"npm run dev\"",
+    "dev:with-proxy": "concurrently \"npm run proxy\" \"npm run dev\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
