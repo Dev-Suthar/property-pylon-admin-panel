@@ -5,6 +5,9 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  address?: string;
+  age?: number;
+  gender?: string;
   role: string;
   company_id: string;
   is_active: boolean;

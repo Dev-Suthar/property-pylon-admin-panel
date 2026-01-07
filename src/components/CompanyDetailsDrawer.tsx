@@ -47,6 +47,7 @@ import {
   Star,
   TrendingUp,
   Bell,
+  FileText,
 } from "lucide-react";
 import {
   companyService,
@@ -139,6 +140,21 @@ export function CompanyDetailsDrawer({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Fetch full company details to ensure we have all fields
+  const {
+    data: companyDetails,
+    isLoading: companyDetailsLoading,
+  } = useQuery({
+    queryKey: ["company-details", company?.id],
+    queryFn: () => {
+      if (!company?.id) return Promise.resolve(null);
+      return companyService.getById(company.id);
+    },
+    enabled: !!company?.id && open,
+    retry: false,
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
@@ -385,18 +401,6 @@ export function CompanyDetailsDrawer({
     : (users as any)?.users || (usersError ? mockUsers : []);
   const properties = propertiesData?.properties || [];
   const customers = customersData?.customers || [];
-
-  // Calculate recommended properties (properties that are available and recently updated)
-  const recommendedProperties = properties
-    .filter((p: Property) => p.status === "open" || p.status === "available")
-    .sort((a: Property, b: Property) => {
-      // Sort by updated_at (most recent first), then by price (higher first)
-      const dateA = new Date(a.updated_at || a.created_at).getTime();
-      const dateB = new Date(b.updated_at || b.created_at).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      return (b.price || 0) - (a.price || 0);
-    })
-    .slice(0, 6); // Top 6 recommended properties
 
   // Mutations for CRUD operations
   const createUserMutation = useMutation({
@@ -937,6 +941,9 @@ export function CompanyDetailsDrawer({
   );
 
   if (!company) return null;
+  
+  // Use fetched company details if available, otherwise fall back to prop
+  const displayCompany = companyDetails || company;
 
   const groupedUsers = filteredUsers.reduce(
     (acc: Record<string, CompanyUser[]>, user: CompanyUser) => {
@@ -970,15 +977,15 @@ export function CompanyDetailsDrawer({
                   </div>
                   <div>
                     <DrawerTitle className="text-2xl text-slate-900">
-                      {company.name}
+                      {displayCompany.name}
                     </DrawerTitle>
                     <DrawerDescription className="mt-1 text-slate-600">
                       Company details and management
                     </DrawerDescription>
                   </div>
                 </div>
-                <Badge variant={company.is_active ? "success" : "secondary"}>
-                  {company.is_active ? "Active" : "Inactive"}
+                <Badge variant={displayCompany.is_active ? "success" : "secondary"}>
+                  {displayCompany.is_active ? "Active" : "Inactive"}
                 </Badge>
               </div>
             </DrawerHeader>
@@ -1038,11 +1045,11 @@ export function CompanyDetailsDrawer({
                               Email
                             </p>
                             <p className="text-sm text-slate-600">
-                              {company.email}
+                              {displayCompany.email}
                             </p>
                           </div>
                         </div>
-                        {company.phone && (
+                        {displayCompany.phone && (
                           <div className="flex items-start gap-3">
                             <Phone className="h-5 w-5 text-slate-500 mt-0.5" />
                             <div>
@@ -1050,12 +1057,12 @@ export function CompanyDetailsDrawer({
                                 Phone
                               </p>
                               <p className="text-sm text-slate-600">
-                                {company.phone}
+                                {displayCompany.phone}
                               </p>
                             </div>
                           </div>
                         )}
-                        {company.address && (
+                        {displayCompany.address && (
                           <div className="flex items-start gap-3 md:col-span-2">
                             <MapPin className="h-5 w-5 text-slate-500 mt-0.5" />
                             <div>
@@ -1063,11 +1070,57 @@ export function CompanyDetailsDrawer({
                                 Address
                               </p>
                               <p className="text-sm text-slate-600">
-                                {company.address}
+                                {displayCompany.address}
                               </p>
                             </div>
                           </div>
                         )}
+                        <div className="flex items-start gap-3">
+                          <UsersRound className="h-5 w-5 text-slate-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">
+                              Team Members
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {displayCompany.team_members !== undefined && displayCompany.team_members !== null 
+                                ? displayCompany.team_members 
+                                : '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <TrendingUp className="h-5 w-5 text-slate-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">
+                              Years of Experience
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {displayCompany.years_of_experience !== undefined && displayCompany.years_of_experience !== null 
+                                ? displayCompany.years_of_experience 
+                                : '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 md:col-span-2">
+                          <Building2 className="h-5 w-5 text-slate-500 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Office Photo
+                            </p>
+                            {displayCompany.office_photo_url ? (
+                              <img
+                                src={displayCompany.office_photo_url}
+                                alt="Company office"
+                                className="rounded-lg border border-slate-200 max-w-full h-auto max-h-64 object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <p className="text-sm text-slate-400 italic">No office photo uploaded</p>
+                            )}
+                          </div>
+                        </div>
                         <div className="flex items-start gap-3">
                           <Calendar className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div>
@@ -1075,13 +1128,79 @@ export function CompanyDetailsDrawer({
                               Created
                             </p>
                             <p className="text-sm text-slate-600">
-                              {format(new Date(company.created_at), "PPp")}
+                              {format(new Date(displayCompany.created_at), "PPp")}
                             </p>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Identity Proof Documents */}
+                  {displayCompany.documents && displayCompany.documents.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Identity Proof Documents</CardTitle>
+                        <CardDescription>
+                          Broker identity proof documents uploaded during onboarding
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {displayCompany.documents.map((doc) => (
+                            <div
+                              key={doc.id}
+                              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Eye className="h-4 w-4 text-slate-500" />
+                                  <span className="text-sm font-medium text-slate-700">
+                                    Document
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {doc.mime_type?.includes('pdf') ? 'PDF' : 
+                                   doc.mime_type?.includes('image') ? 'Image' : 
+                                   'File'}
+                                </Badge>
+                              </div>
+                              {doc.thumbnail_url || (doc.mime_type?.startsWith('image/')) ? (
+                                <div className="mb-2">
+                                  <img
+                                    src={doc.thumbnail_url || doc.url}
+                                    alt="Document"
+                                    className="w-full h-32 object-cover rounded border border-slate-200"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="mb-2 h-32 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                                  <FileText className="h-8 w-8 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="space-y-1">
+                                <p className="text-xs text-slate-500">
+                                  {format(new Date(doc.created_at), "MMM d, yyyy")}
+                                </p>
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                  View Document
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Quick Stats */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1146,131 +1265,6 @@ export function CompanyDetailsDrawer({
                       </CardContent>
                     </Card>
                   </div>
-
-                  {/* Recommended Properties */}
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                          <CardTitle>Recommended Properties</CardTitle>
-                        </div>
-                        <Badge variant="outline" className="gap-1">
-                          <TrendingUp className="h-3 w-3" />
-                          Top Picks
-                        </Badge>
-                      </div>
-                      <CardDescription>
-                        Best matching properties for your customers
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {recommendedProperties.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {recommendedProperties.map((property: Property) => (
-                            <div
-                              key={property.id}
-                              className="group relative border rounded-lg p-4 hover:shadow-lg transition-all duration-200 cursor-pointer bg-gradient-to-br from-white to-slate-50/50 hover:from-blue-50/50 hover:to-indigo-50/50"
-                              onClick={() => {
-                                setSelectedProperty(property);
-                                setIsPropertyDrawerOpen(true);
-                              }}
-                            >
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold text-sm text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                                    {property.title}
-                                  </h4>
-                                  {property.address && (
-                                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      <span className="truncate">
-                                        {property.city || property.address}
-                                      </span>
-                                    </p>
-                                  )}
-                                </div>
-                                <Badge
-                                  variant={
-                                    property.status === "open" ||
-                                    property.status === "available"
-                                      ? "success"
-                                      : "secondary"
-                                  }
-                                  className="ml-2 shrink-0 text-xs"
-                                >
-                                  {property.status}
-                                </Badge>
-                              </div>
-
-                              <div className="space-y-2">
-                                {property.price && (
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="h-4 w-4 text-green-600" />
-                                    <span className="font-bold text-sm text-slate-900">
-                                      {formatPriceWithCurrency(property.price)}
-                                    </span>
-                                  </div>
-                                )}
-
-                                <div className="flex items-center gap-4 text-xs text-slate-600">
-                                  {property.bedrooms !== undefined && (
-                                    <div className="flex items-center gap-1">
-                                      <Bed className="h-3 w-3" />
-                                      <span>{property.bedrooms} BHK</span>
-                                    </div>
-                                  )}
-                                  {property.bathrooms !== undefined && (
-                                    <div className="flex items-center gap-1">
-                                      <Bath className="h-3 w-3" />
-                                      <span>{property.bathrooms}</span>
-                                    </div>
-                                  )}
-                                  {property.area && (
-                                    <div className="flex items-center gap-1">
-                                      <Square className="h-3 w-3" />
-                                      <span>
-                                        {typeof property.area === "number"
-                                          ? property.area.toLocaleString()
-                                          : property.area}{" "}
-                                        sq ft
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {property.property_type && (
-                                  <div className="pt-2 border-t">
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs capitalize"
-                                    >
-                                      {property.property_type}
-                                    </Badge>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Eye className="h-4 w-4 text-blue-500" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-slate-500">
-                          <Home className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                          <p className="text-sm">
-                            No recommended properties available
-                          </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            Properties will appear here when they are available
-                            and recently updated
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
                 </TabsContent>
 
                 {/* Users Tab */}
@@ -1393,6 +1387,26 @@ export function CompanyDetailsDrawer({
                                           <p className="text-sm text-slate-500">
                                             {user.email}
                                           </p>
+                                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                                            {user.phone && (
+                                              <span className="flex items-center gap-1">
+                                                <Phone className="h-3 w-3" />
+                                                {user.phone}
+                                              </span>
+                                            )}
+                                            {user.age !== undefined && user.age !== null && (
+                                              <span>Age: {user.age}</span>
+                                            )}
+                                            {user.gender && (
+                                              <span>• {user.gender}</span>
+                                            )}
+                                          </div>
+                                          {user.address && (
+                                            <p className="text-xs text-slate-400 mt-1 flex items-start gap-1">
+                                              <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                              <span className="line-clamp-1">{user.address}</span>
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-4">

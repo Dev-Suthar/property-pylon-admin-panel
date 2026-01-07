@@ -6,6 +6,9 @@ export interface Company {
   email: string;
   phone?: string;
   address?: string;
+  team_members?: number;
+  years_of_experience?: number;
+  office_photo_url?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -34,6 +37,9 @@ export interface CompanyUser {
   name: string;
   email: string;
   phone?: string;
+  address?: string;
+  age?: number;
+  gender?: string;
   role: string;
   is_active: boolean;
   last_login?: string;
@@ -47,10 +53,21 @@ export interface CompanyUsersResponse {
   limit: number;
 }
 
+export interface CompanyDocument {
+  id: string;
+  url: string;
+  thumbnail_url?: string;
+  type: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
+}
+
 export interface CompanyDetails extends Company {
   users?: CompanyUser[];
   propertiesCount?: number;
   customersCount?: number;
+  documents?: CompanyDocument[];
   subscription?: {
     plan: string;
     status: string;
