@@ -7,8 +7,10 @@ export interface Company {
   phone?: string;
   address?: string;
   team_members?: number;
-  years_of_experience?: number;
+  years_of_experience?: number | string;
   office_photo_url?: string;
+  created_by?: string;
+  s3_bucket_name?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -59,7 +61,7 @@ export interface CompanyDocument {
   thumbnail_url?: string;
   type: string;
   mime_type: string;
-  size: number;
+  size: number | string;
   document_type?: string;
   created_at: string;
 }

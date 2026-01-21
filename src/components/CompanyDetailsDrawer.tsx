@@ -31,6 +31,7 @@ import {
   UserCheck,
   UserCog,
   User,
+  Hash,
   AlertCircle,
   Search,
   Eye,
@@ -116,6 +117,13 @@ const roleColors: Record<string, string> = {
   owner: "bg-blue-500",
   manager: "bg-green-500",
   agent: "bg-gray-500",
+};
+
+const safeFormatDateTime = (value?: string) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return format(d, "PPp");
 };
 
 // Mock data for fallback
@@ -945,6 +953,15 @@ export function CompanyDetailsDrawer({
   
   // Use fetched company details if available, otherwise fall back to prop
   const displayCompany = companyDetails || company;
+  const displayUsers: CompanyUser[] =
+    (displayCompany as any)?.users && Array.isArray((displayCompany as any).users)
+      ? ((displayCompany as any).users as CompanyUser[])
+      : companyUsers;
+
+  const ownerOrAdmin =
+    displayUsers.find((u) => (u.role || "").toLowerCase() === "owner") ||
+    displayUsers.find((u) => (u.role || "").toLowerCase() === "admin") ||
+    displayUsers[0];
 
   const groupedUsers = filteredUsers.reduce(
     (acc: Record<string, CompanyUser[]>, user: CompanyUser) => {
@@ -1039,6 +1056,13 @@ export function CompanyDetailsDrawer({
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-start gap-3 md:col-span-2">
+                          <Hash className="h-5 w-5 text-slate-500 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-700">Company ID</p>
+                            <p className="text-sm text-slate-600 break-all">{displayCompany.id}</p>
+                          </div>
+                        </div>
                         <div className="flex items-start gap-3">
                           <Mail className="h-5 w-5 text-slate-500 mt-0.5" />
                           <div>
@@ -1046,7 +1070,12 @@ export function CompanyDetailsDrawer({
                               Email
                             </p>
                             <p className="text-sm text-slate-600">
-                              {displayCompany.email}
+                              <a
+                                className="text-blue-600 hover:underline"
+                                href={`mailto:${displayCompany.email}`}
+                              >
+                                {displayCompany.email}
+                              </a>
                             </p>
                           </div>
                         </div>
@@ -1058,7 +1087,12 @@ export function CompanyDetailsDrawer({
                                 Phone
                               </p>
                               <p className="text-sm text-slate-600">
-                                {displayCompany.phone}
+                                <a
+                                  className="text-blue-600 hover:underline"
+                                  href={`tel:${displayCompany.phone}`}
+                                >
+                                  {displayCompany.phone}
+                                </a>
                               </p>
                             </div>
                           </div>
@@ -1129,11 +1163,127 @@ export function CompanyDetailsDrawer({
                               Created
                             </p>
                             <p className="text-sm text-slate-600">
-                              {format(new Date(displayCompany.created_at), "PPp")}
+                              {safeFormatDateTime(displayCompany.created_at)}
                             </p>
                           </div>
                         </div>
+                        <div className="flex items-start gap-3">
+                          <Calendar className="h-5 w-5 text-slate-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">
+                              Updated
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {safeFormatDateTime((displayCompany as any)?.updated_at)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {(displayCompany as any)?.created_by && (
+                          <div className="flex items-start gap-3 md:col-span-2">
+                            <UserCheck className="h-5 w-5 text-slate-500 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-700">
+                                Created By (User ID)
+                              </p>
+                              <p className="text-sm text-slate-600 break-all">
+                                {(displayCompany as any).created_by}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {(displayCompany as any)?.s3_bucket_name && (
+                          <div className="flex items-start gap-3 md:col-span-2">
+                            <Building2 className="h-5 w-5 text-slate-500 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-700">
+                                S3 Bucket
+                              </p>
+                              <p className="text-sm text-slate-600 break-all">
+                                {(displayCompany as any).s3_bucket_name}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Owner/Admin Details */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Company Owner Details</CardTitle>
+                      <CardDescription>
+                        Primary owner/admin account linked to this company
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {ownerOrAdmin ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Name</p>
+                            <p className="text-sm text-slate-600">{ownerOrAdmin.name || "-"}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Role</p>
+                            <p className="text-sm text-slate-600">{ownerOrAdmin.role || "-"}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Email</p>
+                            <p className="text-sm text-slate-600">
+                              {ownerOrAdmin.email ? (
+                                <a className="text-blue-600 hover:underline" href={`mailto:${ownerOrAdmin.email}`}>
+                                  {ownerOrAdmin.email}
+                                </a>
+                              ) : (
+                                "-"
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Phone</p>
+                            <p className="text-sm text-slate-600">
+                              {ownerOrAdmin.phone ? (
+                                <a className="text-blue-600 hover:underline" href={`tel:${ownerOrAdmin.phone}`}>
+                                  {ownerOrAdmin.phone}
+                                </a>
+                              ) : (
+                                "-"
+                              )}
+                            </p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <p className="text-sm font-medium text-slate-700">Address</p>
+                            <p className="text-sm text-slate-600">
+                              {ownerOrAdmin.address || "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Gender</p>
+                            <p className="text-sm text-slate-600">{ownerOrAdmin.gender || "-"}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Age</p>
+                            <p className="text-sm text-slate-600">
+                              {ownerOrAdmin.age ?? "-"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Last Login</p>
+                            <p className="text-sm text-slate-600">
+                              {safeFormatDateTime(ownerOrAdmin.last_login)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">User Created</p>
+                            <p className="text-sm text-slate-600">
+                              {safeFormatDateTime(ownerOrAdmin.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">No users available.</p>
+                      )}
                     </CardContent>
                   </Card>
 
@@ -1148,58 +1298,61 @@ export function CompanyDetailsDrawer({
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {displayCompany.documents.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                              onClick={() => setPreviewDoc(doc)}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Eye className="h-4 w-4 text-slate-500" />
-                                  <span className="text-sm font-medium text-slate-700">
-                                    {doc.document_type || "Document"}
-                                  </span>
+                          {displayCompany.documents.map((doc) => {
+                            const isImage = doc.mime_type?.includes("image");
+                            const isPdf = doc.mime_type?.includes("pdf");
+
+                            return (
+                              <div
+                                key={doc.id}
+                                className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer bg-white"
+                                onClick={() => setPreviewDoc(doc)}
+                              >
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="w-16 h-16 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                                    {isImage ? (
+                                      <img
+                                        src={doc.thumbnail_url || doc.url}
+                                        alt={doc.document_type || "Document"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <FileText className="h-8 w-8 text-slate-400" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-slate-800">
+                                        {doc.document_type || "Document"}
+                                      </span>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {isPdf ? "PDF" : isImage ? "Image" : "File"}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-xs text-slate-500 truncate">
+                                      {doc.mime_type}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                      {format(new Date(doc.created_at), "MMM d, yyyy")}
+                                    </p>
+                                  </div>
                                 </div>
-                                <Badge variant="outline" className="text-xs">
-                                  {doc.mime_type?.includes('pdf') ? 'PDF' : 
-                                   doc.mime_type?.includes('image') ? 'Image' : 
-                                   'File'}
-                                </Badge>
-                              </div>
-                              {doc.thumbnail_url || (doc.mime_type?.startsWith('image/')) ? (
-                                <div className="mb-2">
-                                  <img
-                                    src={doc.thumbnail_url || doc.url}
-                                    alt="Document"
-                                    className="w-full h-32 object-cover rounded border border-slate-200"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
+                                <div className="flex items-center justify-between">
+                                  <button
+                                    type="button"
+                                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(doc.url, "_blank", "noopener,noreferrer");
                                     }}
-                                  />
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                    View Document
+                                  </button>
                                 </div>
-                              ) : (
-                                <div className="mb-2 h-32 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                                  <FileText className="h-8 w-8 text-slate-400" />
-                                </div>
-                              )}
-                              <div className="space-y-1">
-                                <p className="text-xs text-slate-500">
-                                  {format(new Date(doc.created_at), "MMM d, yyyy")}
-                                </p>
-                                <a
-                                  href={doc.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <Eye className="h-3 w-3" />
-                                  View Document
-                                </a>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </CardContent>
                     </Card>
