@@ -156,6 +156,7 @@ export function CompanyDetailsDrawer({
   });
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<any | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -1150,13 +1151,14 @@ export function CompanyDetailsDrawer({
                           {displayCompany.documents.map((doc) => (
                             <div
                               key={doc.id}
-                              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                              className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => setPreviewDoc(doc)}
                             >
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <Eye className="h-4 w-4 text-slate-500" />
                                   <span className="text-sm font-medium text-slate-700">
-                                    Document
+                                    {doc.document_type || "Document"}
                                   </span>
                                 </div>
                                 <Badge variant="outline" className="text-xs">
@@ -1190,6 +1192,7 @@ export function CompanyDetailsDrawer({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <Eye className="h-3 w-3" />
                                   View Document
@@ -1201,6 +1204,49 @@ export function CompanyDetailsDrawer({
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Document Preview Dialog */}
+                  <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {previewDoc?.document_type || "Document Preview"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {previewDoc?.mime_type || ""}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="w-full">
+                        {previewDoc?.mime_type?.includes("pdf") ? (
+                          <iframe
+                            src={previewDoc?.url}
+                            className="w-full h-[70vh] rounded border"
+                            title="PDF Preview"
+                          />
+                        ) : previewDoc?.mime_type?.startsWith("image/") ? (
+                          <img
+                            src={previewDoc?.url}
+                            alt="Document"
+                            className="w-full max-h-[70vh] object-contain rounded border bg-white"
+                          />
+                        ) : (
+                          <div className="p-6 border rounded bg-slate-50 text-slate-600">
+                            Preview not available. Use “View Document” to open.
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setPreviewDoc(null)}>
+                          Close
+                        </Button>
+                        <Button asChild>
+                          <a href={previewDoc?.url} target="_blank" rel="noopener noreferrer">
+                            Open in new tab
+                          </a>
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
                   {/* Quick Stats */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -60,6 +60,7 @@ export interface CompanyDocument {
   type: string;
   mime_type: string;
   size: number;
+  document_type?: string;
   created_at: string;
 }
 
