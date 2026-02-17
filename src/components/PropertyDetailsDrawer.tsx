@@ -1,18 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-} from '@/components/ui/drawer';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loading } from '@/components/ui/loading';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loading } from "@/components/ui/loading";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Home,
   MapPin,
@@ -43,13 +49,13 @@ import {
   XCircle,
   Info,
   MessageSquare,
-} from 'lucide-react';
-import { formatPriceWithCurrency } from '@/utils/priceUtils';
-import { propertyService, Property } from '@/services/propertyService';
-import { noteService } from '@/services/noteService';
-import { activityService } from '@/services/activityService';
-import { relationshipService } from '@/services/relationshipService';
-import { format } from 'date-fns';
+} from "lucide-react";
+import { formatPriceWithCurrency } from "@/utils/priceUtils";
+import { propertyService, Property } from "@/services/propertyService";
+import { noteService } from "@/services/noteService";
+import { activityService } from "@/services/activityService";
+import { relationshipService } from "@/services/relationshipService";
+import { format } from "date-fns";
 
 interface PropertyDetailsDrawerProps {
   property: Property | null;
@@ -65,41 +71,64 @@ interface MediaItem {
   order?: number;
 }
 
-export function PropertyDetailsDrawer({ property, open, onOpenChange }: PropertyDetailsDrawerProps) {
+export function PropertyDetailsDrawer({
+  property,
+  open,
+  onOpenChange,
+}: PropertyDetailsDrawerProps) {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedMediaType, setSelectedMediaType] = useState<'all' | 'images' | 'videos' | 'floor_plans' | 'documents'>('all');
+  const [selectedMediaType, setSelectedMediaType] = useState<
+    "all" | "images" | "videos" | "floor_plans" | "documents"
+  >("all");
 
-  const { data: propertyDetails, isLoading, error } = useQuery({
-    queryKey: ['property-details', property?.id],
-    queryFn: () => property?.id ? propertyService.getById(property.id) : Promise.resolve(null),
+  const {
+    data: propertyDetails,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["property-details", property?.id],
+    queryFn: () =>
+      property?.id
+        ? propertyService.getById(property.id)
+        : Promise.resolve(null),
     enabled: !!property?.id && open,
     retry: false,
   });
 
   // Fetch property notes
   const { data: notesData, isLoading: notesLoading } = useQuery({
-    queryKey: ['property-notes', property?.id],
-    queryFn: () => property?.id ? noteService.getPropertyNotes(property.id) : Promise.resolve({ data: [], total: 0, page: 1, limit: 20 }),
+    queryKey: ["property-notes", property?.id],
+    queryFn: () =>
+      property?.id
+        ? noteService.getPropertyNotes(property.id)
+        : Promise.resolve({ data: [], total: 0, page: 1, limit: 20 }),
     enabled: !!property?.id && open,
     retry: false,
   });
 
   // Fetch property activities
   const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['property-activities', property?.id],
-    queryFn: () => property?.id ? activityService.getPropertyActivities(property.id) : Promise.resolve({ data: [], total: 0, page: 1, limit: 20 }),
+    queryKey: ["property-activities", property?.id],
+    queryFn: () =>
+      property?.id
+        ? activityService.getPropertyActivities(property.id)
+        : Promise.resolve({ data: [], total: 0, page: 1, limit: 20 }),
     enabled: !!property?.id && open,
     retry: false,
   });
 
   // Fetch suggested customers
-  const { data: suggestedCustomersData, isLoading: customersLoading } = useQuery({
-    queryKey: ['property-suggested-customers', property?.id],
-    queryFn: () => property?.id ? relationshipService.getPropertySuggestedCustomers(property.id) : Promise.resolve({ data: [], customers: [] }),
-    enabled: !!property?.id && open,
-    retry: false,
-  });
+  const { data: suggestedCustomersData, isLoading: customersLoading } =
+    useQuery({
+      queryKey: ["property-suggested-customers", property?.id],
+      queryFn: () =>
+        property?.id
+          ? relationshipService.getPropertySuggestedCustomers(property.id)
+          : Promise.resolve({ data: [], customers: [] }),
+      enabled: !!property?.id && open,
+      retry: false,
+    });
 
   // Get media from property details (before early return to use in useEffect)
   const allMedia: MediaItem[] = (propertyDetails as any)?.media || [];
@@ -111,13 +140,13 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
   // Filter media based on selected type
   const getFilteredMedia = () => {
     switch (selectedMediaType) {
-      case 'images':
+      case "images":
         return images;
-      case 'videos':
+      case "videos":
         return videos;
-      case 'floor_plans':
+      case "floor_plans":
         return floorPlans;
-      case 'documents':
+      case "documents":
         return documents;
       default:
         return allMedia;
@@ -146,9 +175,11 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
   if (!displayProperty) return null;
 
   // Get linked customers from property details or suggested customers
-  const linkedCustomers = (propertyDetails as any)?.linked_customers || 
-                          suggestedCustomersData?.data || 
-                          suggestedCustomersData?.customers || [];
+  const linkedCustomers =
+    (propertyDetails as any)?.linked_customers ||
+    suggestedCustomersData?.data ||
+    suggestedCustomersData?.customers ||
+    [];
 
   const formatCurrency = (amount?: number) => {
     if (!amount) return "Not specified";
@@ -171,7 +202,7 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
           return "secondary";
       }
     }
-    
+
     // Fallback to status field
     switch (status.toLowerCase()) {
       case "available":
@@ -207,12 +238,16 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
 
   const handlePreviousImage = () => {
     if (filteredMedia.length === 0) return;
-    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : filteredMedia.length - 1));
+    setCurrentImageIndex((prev) =>
+      prev > 0 ? prev - 1 : filteredMedia.length - 1,
+    );
   };
 
   const handleNextImage = () => {
     if (filteredMedia.length === 0) return;
-    setCurrentImageIndex((prev) => (prev < filteredMedia.length - 1 ? prev + 1 : 0));
+    setCurrentImageIndex((prev) =>
+      prev < filteredMedia.length - 1 ? prev + 1 : 0,
+    );
   };
 
   const handleImageClick = (index: number) => {
@@ -232,17 +267,24 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                   <Home className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <DrawerTitle className="text-2xl">{displayProperty.title}</DrawerTitle>
+                  <DrawerTitle className="text-2xl">
+                    {displayProperty.title}
+                  </DrawerTitle>
                   <DrawerDescription className="mt-1">
                     Property details and information
                   </DrawerDescription>
                 </div>
               </div>
               <Badge
-                variant={getStatusBadgeVariant(displayProperty.status, displayProperty.pipeline_status)}
+                variant={getStatusBadgeVariant(
+                  displayProperty.status,
+                  displayProperty.pipeline_status,
+                )}
                 className="capitalize"
               >
-                {displayProperty.pipeline_status ? getDealStatusLabel(displayProperty.pipeline_status) : displayProperty.status}
+                {displayProperty.pipeline_status
+                  ? getDealStatusLabel(displayProperty.pipeline_status)
+                  : displayProperty.status}
               </Badge>
             </div>
           </DrawerHeader>
@@ -269,17 +311,25 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                         <CardTitle>Media Gallery</CardTitle>
                         <div className="flex gap-2">
                           <Button
-                            variant={selectedMediaType === 'all' ? 'default' : 'outline'}
+                            variant={
+                              selectedMediaType === "all"
+                                ? "default"
+                                : "outline"
+                            }
                             size="sm"
-                            onClick={() => setSelectedMediaType('all')}
+                            onClick={() => setSelectedMediaType("all")}
                           >
                             All ({allMedia.length})
                           </Button>
                           {images.length > 0 && (
                             <Button
-                              variant={selectedMediaType === 'images' ? 'default' : 'outline'}
+                              variant={
+                                selectedMediaType === "images"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => setSelectedMediaType('images')}
+                              onClick={() => setSelectedMediaType("images")}
                             >
                               <ImageIcon className="h-4 w-4 mr-1" />
                               Images ({images.length})
@@ -287,9 +337,13 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           )}
                           {videos.length > 0 && (
                             <Button
-                              variant={selectedMediaType === 'videos' ? 'default' : 'outline'}
+                              variant={
+                                selectedMediaType === "videos"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => setSelectedMediaType('videos')}
+                              onClick={() => setSelectedMediaType("videos")}
                             >
                               <Video className="h-4 w-4 mr-1" />
                               Videos ({videos.length})
@@ -297,9 +351,15 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           )}
                           {floorPlans.length > 0 && (
                             <Button
-                              variant={selectedMediaType === 'floor_plans' ? 'default' : 'outline'}
+                              variant={
+                                selectedMediaType === "floor_plans"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => setSelectedMediaType('floor_plans')}
+                              onClick={() =>
+                                setSelectedMediaType("floor_plans")
+                              }
                             >
                               <FileText className="h-4 w-4 mr-1" />
                               Floor Plans ({floorPlans.length})
@@ -307,9 +367,13 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           )}
                           {documents.length > 0 && (
                             <Button
-                              variant={selectedMediaType === 'documents' ? 'default' : 'outline'}
+                              variant={
+                                selectedMediaType === "documents"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => setSelectedMediaType('documents')}
+                              onClick={() => setSelectedMediaType("documents")}
                             >
                               <FileText className="h-4 w-4 mr-1" />
                               Documents ({documents.length})
@@ -319,20 +383,28 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {filteredMedia.length > 0 && filteredMedia[currentImageIndex] ? (
+                      {filteredMedia.length > 0 &&
+                      filteredMedia[currentImageIndex] ? (
                         <div className="space-y-4">
                           {/* Main Media Display */}
                           <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                            {filteredMedia[currentImageIndex]?.type === 'image' || 
-                             filteredMedia[currentImageIndex]?.type === 'floor_plan' ? (
+                            {filteredMedia[currentImageIndex]?.type ===
+                              "image" ||
+                            filteredMedia[currentImageIndex]?.type ===
+                              "floor_plan" ? (
                               <img
-                                src={filteredMedia[currentImageIndex]?.url || ''}
+                                src={
+                                  filteredMedia[currentImageIndex]?.url || ""
+                                }
                                 alt={`Media ${currentImageIndex + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                            ) : filteredMedia[currentImageIndex]?.type === 'video' ? (
+                            ) : filteredMedia[currentImageIndex]?.type ===
+                              "video" ? (
                               <video
-                                src={filteredMedia[currentImageIndex]?.url || ''}
+                                src={
+                                  filteredMedia[currentImageIndex]?.url || ""
+                                }
                                 controls
                                 className="w-full h-full object-cover"
                               />
@@ -340,10 +412,14 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                               <div className="w-full h-full flex items-center justify-center bg-gray-100">
                                 <div className="text-center">
                                   <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                                  <p className="text-sm text-gray-600">Document</p>
+                                  <p className="text-sm text-gray-600">
+                                    Document
+                                  </p>
                                   {filteredMedia[currentImageIndex]?.url && (
                                     <a
-                                      href={filteredMedia[currentImageIndex].url}
+                                      href={
+                                        filteredMedia[currentImageIndex].url
+                                      }
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="mt-2 inline-flex items-center gap-2 text-sm text-primary hover:underline"
@@ -355,7 +431,7 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                                 </div>
                               </div>
                             )}
-                            
+
                             {/* Navigation Arrows */}
                             {filteredMedia.length > 1 && (
                               <>
@@ -389,7 +465,12 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                                 variant="ghost"
                                 size="icon"
                                 className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
-                                onClick={() => window.open(filteredMedia[currentImageIndex]?.url, '_blank')}
+                                onClick={() =>
+                                  window.open(
+                                    filteredMedia[currentImageIndex]?.url,
+                                    "_blank",
+                                  )
+                                }
                               >
                                 <Maximize2 className="h-4 w-4" />
                               </Button>
@@ -405,17 +486,18 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                                   onClick={() => handleImageClick(index)}
                                   className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                                     index === currentImageIndex
-                                      ? 'border-primary ring-2 ring-primary'
-                                      : 'border-transparent hover:border-gray-300'
+                                      ? "border-primary ring-2 ring-primary"
+                                      : "border-transparent hover:border-gray-300"
                                   }`}
                                 >
-                                  {media.type === 'image' || media.type === 'floor_plan' ? (
+                                  {media.type === "image" ||
+                                  media.type === "floor_plan" ? (
                                     <img
                                       src={media.thumbnail_url || media.url}
                                       alt={`Thumbnail ${index + 1}`}
                                       className="w-full h-full object-cover"
                                     />
-                                  ) : media.type === 'video' ? (
+                                  ) : media.type === "video" ? (
                                     <div className="relative w-full h-full bg-gray-200">
                                       <img
                                         src={media.thumbnail_url || media.url}
@@ -440,7 +522,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                         </div>
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
-                          No {selectedMediaType === 'all' ? '' : selectedMediaType} media available
+                          No{" "}
+                          {selectedMediaType === "all" ? "" : selectedMediaType}{" "}
+                          media available
                         </div>
                       )}
                     </CardContent>
@@ -470,8 +554,83 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           <p className="text-sm text-muted-foreground font-semibold">
                             {formatCurrency(displayProperty.price)}
                           </p>
+                          {(displayProperty as any).property_purpose && (
+                            <Badge
+                              variant="outline"
+                              className="mt-1 text-xs capitalize"
+                            >
+                              {(displayProperty as any).property_purpose ===
+                                "for_sale" && "For Sale"}
+                              {(displayProperty as any).property_purpose ===
+                                "for_rent" && "For Rent"}
+                              {(displayProperty as any).property_purpose ===
+                                "both" && "Sale & Rent"}
+                            </Badge>
+                          )}
                         </div>
                       </div>
+                      {(displayProperty as any).monthly_rent && (
+                        <div className="flex items-start gap-3">
+                          <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Monthly Rent</p>
+                            <p className="text-sm text-muted-foreground font-semibold">
+                              {formatCurrency(
+                                (displayProperty as any).monthly_rent,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {(displayProperty as any).security_deposit && (
+                        <div className="flex items-start gap-3">
+                          <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              Security Deposit
+                            </p>
+                            <p className="text-sm text-muted-foreground font-semibold">
+                              {formatCurrency(
+                                (displayProperty as any).security_deposit,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {(displayProperty as any).availability_status && (
+                        <div className="flex items-start gap-3">
+                          <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              Availability Status
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className="mt-1 capitalize"
+                            >
+                              {(
+                                displayProperty as any
+                              ).availability_status.replace(/_/g, " ")}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                      {(displayProperty as any).pipeline_stage && (
+                        <div className="flex items-start gap-3">
+                          <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              Pipeline Stage
+                            </p>
+                            <Badge variant="outline" className="mt-1">
+                              {(displayProperty as any).pipeline_stage.replace(
+                                /_/g,
+                                " ",
+                              )}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
                       {displayProperty.address && (
                         <div className="flex items-start gap-3 md:col-span-2">
                           <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -479,9 +638,12 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                             <p className="text-sm font-medium">Address</p>
                             <p className="text-sm text-muted-foreground">
                               {displayProperty.address}
-                              {displayProperty.city && `, ${displayProperty.city}`}
-                              {displayProperty.state && `, ${displayProperty.state}`}
-                              {displayProperty.zip_code && ` ${displayProperty.zip_code}`}
+                              {displayProperty.city &&
+                                `, ${displayProperty.city}`}
+                              {displayProperty.state &&
+                                `, ${displayProperty.state}`}
+                              {displayProperty.zip_code &&
+                                ` ${displayProperty.zip_code}`}
                             </p>
                           </div>
                         </div>
@@ -514,9 +676,10 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           <div>
                             <p className="text-sm font-medium">Area</p>
                             <p className="text-sm text-muted-foreground">
-                              {typeof displayProperty.area === 'number' 
-                                ? displayProperty.area.toLocaleString() 
-                                : displayProperty.area} sq ft
+                              {typeof displayProperty.area === "number"
+                                ? displayProperty.area.toLocaleString()
+                                : displayProperty.area}{" "}
+                              sq ft
                             </p>
                           </div>
                         </div>
@@ -526,7 +689,10 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                         <div>
                           <p className="text-sm font-medium">Created</p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(displayProperty.created_at), 'PPp')}
+                            {format(
+                              new Date(displayProperty.created_at),
+                              "PPp",
+                            )}
                           </p>
                         </div>
                       </div>
@@ -543,7 +709,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                 </Card>
 
                 {/* Owner Information */}
-                {(displayProperty.owner_name || displayProperty.owner_phone || displayProperty.owner_email) && (
+                {(displayProperty.owner_name ||
+                  displayProperty.owner_phone ||
+                  displayProperty.owner_email) && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Owner Information</CardTitle>
@@ -554,7 +722,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
                             <p className="text-sm font-medium">Name</p>
-                            <p className="text-sm text-muted-foreground">{displayProperty.owner_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {displayProperty.owner_name}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -591,122 +761,150 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                 )}
 
                 {/* Buyer Information - Show when deal status is DEALING */}
-                {displayProperty.pipeline_status === "DEALING" && displayProperty.buyer && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Primary Buyer</CardTitle>
-                      <CardDescription>
-                        Buyer for this property deal
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Name</p>
-                          <p className="text-sm text-muted-foreground">{displayProperty.buyer.name}</p>
-                        </div>
-                      </div>
-                      {displayProperty.buyer.phone && (
+                {displayProperty.pipeline_status === "DEALING" &&
+                  displayProperty.buyer && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Primary Buyer</CardTitle>
+                        <CardDescription>
+                          Buyer for this property deal
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
                         <div className="flex items-start gap-3">
-                          <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <User className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium">Phone</p>
-                            <a
-                              href={`tel:${displayProperty.buyer.phone}`}
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {displayProperty.buyer.phone}
-                            </a>
+                            <p className="text-sm font-medium">Name</p>
+                            <p className="text-sm text-muted-foreground">
+                              {displayProperty.buyer.name}
+                            </p>
                           </div>
                         </div>
-                      )}
-                      {displayProperty.buyer.email && (
-                        <div className="flex items-start gap-3">
-                          <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium">Email</p>
-                            <a
-                              href={`mailto:${displayProperty.buyer.email}`}
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {displayProperty.buyer.email}
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Features */}
-                {displayProperty.features && displayProperty.features.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Features</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {displayProperty.features.map((feature, index) => (
-                          <Badge key={index} variant="outline" className="text-sm">
-                            <Star className="h-3 w-3 mr-1" />
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Nearby Places */}
-                {displayProperty.nearby_places && displayProperty.nearby_places.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Nearby Places</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {displayProperty.nearby_places.map((place: any, index: number) => (
-                          <div key={index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            <MapPinIcon className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{place.name}</p>
-                              {place.distance && (
-                                <p className="text-xs text-muted-foreground">{place.distance}</p>
-                              )}
+                        {displayProperty.buyer.phone && (
+                          <div className="flex items-start gap-3">
+                            <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Phone</p>
+                              <a
+                                href={`tel:${displayProperty.buyer.phone}`}
+                                className="text-sm text-primary hover:underline"
+                              >
+                                {displayProperty.buyer.phone}
+                              </a>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                        )}
+                        {displayProperty.buyer.email && (
+                          <div className="flex items-start gap-3">
+                            <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Email</p>
+                              <a
+                                href={`mailto:${displayProperty.buyer.email}`}
+                                className="text-sm text-primary hover:underline"
+                              >
+                                {displayProperty.buyer.email}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                {/* Features */}
+                {displayProperty.features &&
+                  displayProperty.features.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Features</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {displayProperty.features.map((feature, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-sm"
+                            >
+                              <Star className="h-3 w-3 mr-1" />
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                {/* Nearby Places */}
+                {displayProperty.nearby_places &&
+                  displayProperty.nearby_places.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Nearby Places</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {displayProperty.nearby_places.map(
+                            (place: any, index: number) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                <MapPinIcon className="h-4 w-4 text-muted-foreground" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">
+                                    {place.name}
+                                  </p>
+                                  {place.distance && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {place.distance}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                 {/* Visiting Information */}
-                {((displayProperty.visiting_days && displayProperty.visiting_days.length > 0) || displayProperty.visiting_start_time || displayProperty.visiting_notes) && (
+                {((displayProperty.visiting_days &&
+                  displayProperty.visiting_days.length > 0) ||
+                  displayProperty.visiting_start_time ||
+                  displayProperty.visiting_notes) && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Visiting Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {displayProperty.visiting_days && displayProperty.visiting_days.length > 0 && (
-                        <div className="flex items-start gap-3">
-                          <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium">Available Days</p>
-                            <p className="text-sm text-muted-foreground">
-                              {displayProperty.visiting_days.join(', ')}
-                            </p>
+                      {displayProperty.visiting_days &&
+                        displayProperty.visiting_days.length > 0 && (
+                          <div className="flex items-start gap-3">
+                            <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                Available Days
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {displayProperty.visiting_days.join(", ")}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {(displayProperty.visiting_start_time || displayProperty.visiting_end_time) && (
+                        )}
+                      {(displayProperty.visiting_start_time ||
+                        displayProperty.visiting_end_time) && (
                         <div className="flex items-start gap-3">
                           <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium">Visiting Hours</p>
+                            <p className="text-sm font-medium">
+                              Visiting Hours
+                            </p>
                             <p className="text-sm text-muted-foreground">
-                              {displayProperty.visiting_start_time || 'N/A'} - {displayProperty.visiting_end_time || 'N/A'}
+                              {displayProperty.visiting_start_time || "N/A"} -{" "}
+                              {displayProperty.visiting_end_time || "N/A"}
                             </p>
                           </div>
                         </div>
@@ -716,7 +914,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                           <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
                           <div>
                             <p className="text-sm font-medium">Notes</p>
-                            <p className="text-sm text-muted-foreground">{displayProperty.visiting_notes}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {displayProperty.visiting_notes}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -731,7 +931,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                       <CardTitle>Possession</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground">{displayProperty.possession}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {displayProperty.possession}
+                      </p>
                     </CardContent>
                   </Card>
                 )}
@@ -741,7 +943,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                   <CardHeader>
                     <CardTitle>Notes</CardTitle>
                     <CardDescription>
-                      {notesLoading ? 'Loading...' : `${notesData?.data?.length || 0} note(s)`}
+                      {notesLoading
+                        ? "Loading..."
+                        : `${notesData?.data?.length || 0} note(s)`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -760,17 +964,23 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                               <div className="flex items-center gap-2">
                                 <Badge
                                   variant={
-                                    note.type === 'positive'
-                                      ? 'success'
-                                      : note.type === 'issue'
-                                      ? 'destructive'
-                                      : 'default'
+                                    note.type === "positive"
+                                      ? "success"
+                                      : note.type === "issue"
+                                        ? "destructive"
+                                        : "default"
                                   }
                                   className="text-xs"
                                 >
-                                  {note.type === 'positive' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                                  {note.type === 'issue' && <XCircle className="h-3 w-3 mr-1" />}
-                                  {note.type === 'general' && <Info className="h-3 w-3 mr-1" />}
+                                  {note.type === "positive" && (
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  )}
+                                  {note.type === "issue" && (
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  {note.type === "general" && (
+                                    <Info className="h-3 w-3 mr-1" />
+                                  )}
                                   {note.type}
                                 </Badge>
                                 {note.creator && (
@@ -780,10 +990,15 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                                 )}
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {format(new Date(note.created_at), 'MMM d, yyyy')}
+                                {format(
+                                  new Date(note.created_at),
+                                  "MMM d, yyyy",
+                                )}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-900">{note.content}</p>
+                            <p className="text-sm text-gray-900">
+                              {note.content}
+                            </p>
                             {note.Customer && (
                               <div className="mt-2 pt-2 border-t">
                                 <p className="text-xs text-muted-foreground">
@@ -807,7 +1022,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                   <CardHeader>
                     <CardTitle>Activities</CardTitle>
                     <CardDescription>
-                      {activitiesLoading ? 'Loading...' : `${activitiesData?.data?.length || 0} activity(ies)`}
+                      {activitiesLoading
+                        ? "Loading..."
+                        : `${activitiesData?.data?.length || 0} activity(ies)`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -815,7 +1032,8 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                       <div className="flex items-center justify-center py-4">
                         <Loading size="sm" />
                       </div>
-                    ) : activitiesData?.data && activitiesData.data.length > 0 ? (
+                    ) : activitiesData?.data &&
+                      activitiesData.data.length > 0 ? (
                       <div className="space-y-3">
                         {activitiesData.data.map((activity) => (
                           <div
@@ -823,21 +1041,39 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                             className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
                           >
                             <div className="mt-0.5">
-                              {activity.type === 'call' && <Phone className="h-4 w-4 text-blue-500" />}
-                              {activity.type === 'visit' && <MapPinIcon className="h-4 w-4 text-green-500" />}
-                              {activity.type === 'whatsapp' && <MessageSquare className="h-4 w-4 text-green-600" />}
-                              {activity.type === 'note' && <FileText className="h-4 w-4 text-purple-500" />}
+                              {activity.type === "call" && (
+                                <Phone className="h-4 w-4 text-blue-500" />
+                              )}
+                              {activity.type === "visit" && (
+                                <MapPinIcon className="h-4 w-4 text-green-500" />
+                              )}
+                              {activity.type === "whatsapp" && (
+                                <MessageSquare className="h-4 w-4 text-green-600" />
+                              )}
+                              {activity.type === "note" && (
+                                <FileText className="h-4 w-4 text-purple-500" />
+                              )}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
-                                <Badge variant="outline" className="text-xs capitalize">
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs capitalize"
+                                >
                                   {activity.type}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(activity.date || activity.created_at), 'MMM d, yyyy HH:mm')}
+                                  {format(
+                                    new Date(
+                                      activity.date || activity.created_at,
+                                    ),
+                                    "MMM d, yyyy HH:mm",
+                                  )}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-900">{activity.description}</p>
+                              <p className="text-sm text-gray-900">
+                                {activity.description}
+                              </p>
                               {activity.creator && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   by {activity.creator.name}
@@ -860,7 +1096,9 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                   <CardHeader>
                     <CardTitle>Linked Customers</CardTitle>
                     <CardDescription>
-                      {customersLoading ? 'Loading...' : `${linkedCustomers.length} customer(s) linked to this property`}
+                      {customersLoading
+                        ? "Loading..."
+                        : `${linkedCustomers.length} customer(s) linked to this property`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -884,18 +1122,27 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-medium text-sm">{customer.name}</p>
+                                    <p className="font-medium text-sm">
+                                      {customer.name}
+                                    </p>
                                     {item.match_score && (
-                                      <Badge variant="outline" className="text-xs">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
                                         Match: {item.match_score}%
                                       </Badge>
                                     )}
                                   </div>
                                   {customer.email && (
-                                    <p className="text-xs text-muted-foreground">{customer.email}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {customer.email}
+                                    </p>
                                   )}
                                   {customer.phone && (
-                                    <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {customer.phone}
+                                    </p>
                                   )}
                                   {customer.area && customer.city && (
                                     <p className="text-xs text-muted-foreground mt-1">
@@ -921,6 +1168,151 @@ export function PropertyDetailsDrawer({ property, open, onOpenChange }: Property
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Deals Section */}
+                {(propertyDetails as any)?.deals &&
+                  (propertyDetails as any).deals.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Deals</CardTitle>
+                        <CardDescription>
+                          {(propertyDetails as any).deals.length} deal(s) for
+                          this property
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {(propertyDetails as any).deals.map((deal: any) => (
+                            <div
+                              key={deal.id}
+                              className="p-3 rounded-lg border bg-gray-50"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <Badge
+                                  variant={
+                                    deal.deal_type === "sale"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className="capitalize"
+                                >
+                                  {deal.deal_type}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(
+                                    new Date(deal.deal_date),
+                                    "MMM d, yyyy",
+                                  )}
+                                </span>
+                              </div>
+                              {deal.customer && (
+                                <p className="text-sm font-medium mb-1">
+                                  {deal.customer.name}
+                                </p>
+                              )}
+                              {deal.final_amount && (
+                                <p className="text-sm text-muted-foreground">
+                                  Amount: {formatCurrency(deal.final_amount)}
+                                </p>
+                              )}
+                              {deal.commission_amount && (
+                                <p className="text-sm text-muted-foreground">
+                                  Commission:{" "}
+                                  {formatCurrency(deal.commission_amount)}
+                                  {deal.commission_pct &&
+                                    ` (${deal.commission_pct}%)`}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                {/* Rental History Section */}
+                {(propertyDetails as any)?.rental_history &&
+                  (propertyDetails as any).rental_history.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Rental History</CardTitle>
+                        <CardDescription>
+                          {(propertyDetails as any).rental_history.length}{" "}
+                          rental agreement(s) - tenant history preserved
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {(propertyDetails as any).rental_history.map(
+                            (agreement: any) => (
+                              <div
+                                key={agreement.id}
+                                className="p-3 rounded-lg border bg-gray-50"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <Badge
+                                    variant={
+                                      agreement.status === "active"
+                                        ? "success"
+                                        : "secondary"
+                                    }
+                                    className="capitalize"
+                                  >
+                                    {agreement.status}
+                                  </Badge>
+                                  {agreement.version > 1 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      Version {agreement.version}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {agreement.tenant && (
+                                  <p className="text-sm font-medium mb-1">
+                                    {agreement.tenant.name}
+                                  </p>
+                                )}
+                                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mt-2">
+                                  <div>
+                                    <span className="font-medium">Start:</span>{" "}
+                                    {format(
+                                      new Date(agreement.start_date),
+                                      "MMM d, yyyy",
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">End:</span>{" "}
+                                    {format(
+                                      new Date(agreement.end_date),
+                                      "MMM d, yyyy",
+                                    )}
+                                  </div>
+                                  {agreement.rent_amount && (
+                                    <div>
+                                      <span className="font-medium">Rent:</span>{" "}
+                                      {formatCurrency(agreement.rent_amount)}
+                                    </div>
+                                  )}
+                                  {agreement.security_deposit && (
+                                    <div>
+                                      <span className="font-medium">
+                                        Deposit:
+                                      </span>{" "}
+                                      {formatCurrency(
+                                        agreement.security_deposit,
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

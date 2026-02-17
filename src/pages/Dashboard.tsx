@@ -1,6 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Home, UsersRound, TrendingUp, AlertCircle } from 'lucide-react';
+import { useQuery } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Building2,
+  Users,
+  Home,
+  UsersRound,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -15,9 +28,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
-import { dashboardService } from '@/services/dashboardService';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "recharts";
+import { dashboardService } from "@/services/dashboardService";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Mock data fallback
 const mockStats = {
@@ -33,66 +46,117 @@ const mockStats = {
 };
 
 const mockCompanyGrowth = [
-  { month: 'Jan', companies: 20 },
-  { month: 'Feb', companies: 22 },
-  { month: 'Mar', companies: 21 },
-  { month: 'Apr', companies: 23 },
-  { month: 'May', companies: 24 },
-  { month: 'Jun', companies: 24 },
+  { month: "Jan", companies: 20 },
+  { month: "Feb", companies: 22 },
+  { month: "Mar", companies: 21 },
+  { month: "Apr", companies: 23 },
+  { month: "May", companies: 24 },
+  { month: "Jun", companies: 24 },
 ];
 
 const mockSubscriptionData = [
-  { name: 'Basic', value: 8, color: '#8884d8' },
-  { name: 'Professional', value: 12, color: '#82ca9d' },
-  { name: 'Enterprise', value: 4, color: '#ffc658' },
+  { name: "Basic", value: 8, color: "#8884d8" },
+  { name: "Professional", value: 12, color: "#82ca9d" },
+  { name: "Enterprise", value: 4, color: "#ffc658" },
 ];
 
 const mockRevenueData = [
-  { month: 'Jan', revenue: 24000 },
-  { month: 'Feb', revenue: 26000 },
-  { month: 'Mar', revenue: 28000 },
-  { month: 'Apr', revenue: 30000 },
-  { month: 'May', revenue: 32000 },
-  { month: 'Jun', revenue: 35000 },
+  { month: "Jan", revenue: 24000 },
+  { month: "Feb", revenue: 26000 },
+  { month: "Mar", revenue: 28000 },
+  { month: "Apr", revenue: 30000 },
+  { month: "May", revenue: 32000 },
+  { month: "Jun", revenue: 35000 },
 ];
 
 export function Dashboard() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ["dashboard"],
     queryFn: () => dashboardService.getDashboardData(),
     retry: false,
   });
 
   const stats = data?.stats || mockStats;
   const companyGrowth = data?.companyGrowth || mockCompanyGrowth;
-  const subscriptionData = data?.subscriptionDistribution || mockSubscriptionData;
+  const subscriptionData =
+    data?.subscriptionDistribution || mockSubscriptionData;
   const revenueData = data?.revenue || mockRevenueData;
 
   const statsCards = [
     {
-      title: 'Total Companies',
+      title: "Total Companies",
       value: stats.totalCompanies.toLocaleString(),
       icon: Building2,
-      change: '+12%',
+      change: "+12%",
     },
     {
-      title: 'Total Users',
+      title: "Total Users",
       value: stats.totalUsers.toLocaleString(),
       icon: Users,
-      change: '+8%',
+      change: "+8%",
     },
     {
-      title: 'Total Properties',
+      title: "Total Properties",
       value: stats.totalProperties.toLocaleString(),
       icon: Home,
-      change: '+15%',
+      change: "+15%",
     },
     {
-      title: 'Total Customers',
+      title: "Total Customers",
       value: stats.totalCustomers.toLocaleString(),
       icon: UsersRound,
-      change: '+10%',
+      change: "+10%",
     },
+    ...(stats.total_properties_for_sale !== undefined
+      ? [
+          {
+            title: "Properties For Sale",
+            value: stats.total_properties_for_sale.toLocaleString(),
+            icon: Home,
+            change: "",
+          },
+        ]
+      : []),
+    ...(stats.total_properties_for_rent !== undefined
+      ? [
+          {
+            title: "Properties For Rent",
+            value: stats.total_properties_for_rent.toLocaleString(),
+            icon: Home,
+            change: "",
+          },
+        ]
+      : []),
+    ...(stats.total_buyer_requirements_sale !== undefined
+      ? [
+          {
+            title: "Buyers (Want to Buy)",
+            value: stats.total_buyer_requirements_sale.toLocaleString(),
+            icon: UsersRound,
+            change: "",
+          },
+        ]
+      : []),
+    ...(stats.total_buyer_requirements_rent !== undefined
+      ? [
+          {
+            title: "Buyers (Want to Rent)",
+            value: stats.total_buyer_requirements_rent.toLocaleString(),
+            icon: UsersRound,
+            change: "",
+          },
+        ]
+      : []),
+    ...(stats.expiring_agreements_count !== undefined
+      ? [
+          {
+            title: "Expiring Agreements (30d)",
+            value: stats.expiring_agreements_count.toLocaleString(),
+            icon: AlertCircle,
+            change: "",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -132,34 +196,44 @@ export function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {statsCards.map((stat, index) => {
               const Icon = stat.icon;
               const gradients = [
-                'from-blue-500 to-cyan-500',
-                'from-purple-500 to-pink-500',
-                'from-green-500 to-emerald-500',
-                'from-orange-500 to-amber-500',
+                "from-blue-500 to-cyan-500",
+                "from-purple-500 to-pink-500",
+                "from-green-500 to-emerald-500",
+                "from-orange-500 to-amber-500",
               ];
               const gradient = gradients[index % gradients.length];
-              
+
               return (
-                <Card 
+                <Card
                   key={stat.title}
                   className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-5`} />
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-5`}
+                  />
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                    <CardTitle className="text-sm font-semibold text-slate-600">{stat.title}</CardTitle>
-                    <div className={`p-2 rounded-lg bg-gradient-to-br ${gradient} shadow-md`}>
+                    <CardTitle className="text-sm font-semibold text-slate-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div
+                      className={`p-2 rounded-lg bg-gradient-to-br ${gradient} shadow-md`}
+                    >
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                   </CardHeader>
                   <CardContent className="relative z-10">
-                    <div className="text-3xl font-bold text-slate-900 mb-2">{stat.value}</div>
+                    <div className="text-3xl font-bold text-slate-900 mb-2">
+                      {stat.value}
+                    </div>
                     <p className="text-xs text-slate-500 flex items-center gap-1.5">
                       <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-                      <span className="font-medium text-green-600">{stat.change}</span>
+                      <span className="font-medium text-green-600">
+                        {stat.change}
+                      </span>
                       <span>from last month</span>
                     </p>
                   </CardContent>
@@ -171,37 +245,38 @@ export function Dashboard() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="border-0 shadow-lg">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-                <CardTitle className="text-lg font-semibold text-slate-900">Company Growth</CardTitle>
-                <CardDescription className="text-slate-600">New companies registered over time</CardDescription>
+                <CardTitle className="text-lg font-semibold text-slate-900">
+                  Company Growth
+                </CardTitle>
+                <CardDescription className="text-slate-600">
+                  New companies registered over time
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={companyGrowth}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis 
-                      dataKey="month" 
+                    <XAxis
+                      dataKey="month"
                       stroke="#64748b"
-                      style={{ fontSize: '12px' }}
+                      style={{ fontSize: "12px" }}
                     />
-                    <YAxis 
-                      stroke="#64748b"
-                      style={{ fontSize: '12px' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                       }}
                     />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="companies" 
-                      stroke="#3b82f6" 
+                    <Line
+                      type="monotone"
+                      dataKey="companies"
+                      stroke="#3b82f6"
                       strokeWidth={3}
-                      dot={{ fill: '#3b82f6', r: 5 }}
+                      dot={{ fill: "#3b82f6", r: 5 }}
                       activeDot={{ r: 7 }}
                     />
                   </LineChart>
@@ -211,8 +286,12 @@ export function Dashboard() {
 
             <Card className="border-0 shadow-lg">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
-                <CardTitle className="text-lg font-semibold text-slate-900">Subscription Distribution</CardTitle>
-                <CardDescription className="text-slate-600">Current subscription plans breakdown</CardDescription>
+                <CardTitle className="text-lg font-semibold text-slate-900">
+                  Subscription Distribution
+                </CardTitle>
+                <CardDescription className="text-slate-600">
+                  Current subscription plans breakdown
+                </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <ResponsiveContainer width="100%" height={300}>
@@ -222,7 +301,9 @@ export function Dashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
                       outerRadius={90}
                       fill="#8884d8"
                       dataKey="value"
@@ -231,12 +312,12 @@ export function Dashboard() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                       }}
                     />
                   </PieChart>
@@ -247,40 +328,55 @@ export function Dashboard() {
 
           <Card className="border-0 shadow-lg">
             <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
-              <CardTitle className="text-lg font-semibold text-slate-900">Revenue Trends</CardTitle>
-              <CardDescription className="text-slate-600">Monthly recurring revenue over time</CardDescription>
+              <CardTitle className="text-lg font-semibold text-slate-900">
+                Revenue Trends
+              </CardTitle>
+              <CardDescription className="text-slate-600">
+                Monthly recurring revenue over time
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="month" 
+                  <XAxis
+                    dataKey="month"
                     stroke="#64748b"
-                    style={{ fontSize: '12px' }}
+                    style={{ fontSize: "12px" }}
                   />
-                  <YAxis 
-                    stroke="#64748b"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
                   />
                   <Legend />
-                  <Bar 
-                    dataKey="revenue" 
+                  <Bar
+                    dataKey="revenue"
                     fill="url(#colorRevenue)"
                     radius={[8, 8, 0, 0]}
                   >
                     <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#059669" stopOpacity={0.8}/>
+                      <linearGradient
+                        id="colorRevenue"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#10b981"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#059669"
+                          stopOpacity={0.8}
+                        />
                       </linearGradient>
                     </defs>
                   </Bar>

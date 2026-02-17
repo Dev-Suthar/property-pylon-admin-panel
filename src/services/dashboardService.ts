@@ -1,4 +1,4 @@
-import { apiClient, handleApiError } from '@/lib/api';
+import { apiClient, handleApiError } from "@/lib/api";
 
 export interface DashboardStats {
   totalCompanies: number;
@@ -6,6 +6,11 @@ export interface DashboardStats {
   totalProperties: number;
   totalCustomers: number;
   activeSubscriptions: number;
+  total_properties_for_sale?: number;
+  total_properties_for_rent?: number;
+  total_buyer_requirements_sale?: number;
+  total_buyer_requirements_rent?: number;
+  expiring_agreements_count?: number;
   revenue: {
     mrr: number;
     arr: number;
@@ -38,12 +43,11 @@ export interface DashboardData {
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
     try {
-      const response = await apiClient.get<DashboardData>('/admin/dashboard');
+      const response = await apiClient.get<DashboardData>("/admin/dashboard");
       return response.data;
     } catch (error) {
-      console.warn('Admin dashboard endpoint not available, using mock data');
+      console.warn("Admin dashboard endpoint not available, using mock data");
       throw new Error(handleApiError(error));
     }
   },
 };
-

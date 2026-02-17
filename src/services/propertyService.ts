@@ -1,4 +1,4 @@
-import { apiClient, handleApiError } from '@/lib/api';
+import { apiClient, handleApiError } from "@/lib/api";
 
 export interface MediaItem {
   id: string;
@@ -45,12 +45,38 @@ export interface Property {
   visiting_start_time?: string;
   visiting_end_time?: string;
   visiting_notes?: string;
+  // Sale/Rent fields
+  property_purpose?: "for_sale" | "for_rent" | "both";
+  monthly_rent?: number;
+  security_deposit?: number;
+  availability_status?: string;
+  pipeline_stage?: string;
   // Media fields (optional, only in detailed view)
   images?: MediaItem[];
   videos?: MediaItem[];
   floor_plans?: MediaItem[];
   documents?: MediaItem[];
   media?: MediaItem[];
+  // Deal and rental history
+  deals?: Array<{
+    id: string;
+    deal_type: "sale" | "rent";
+    customer?: { id: string; name: string; phone?: string; email?: string };
+    final_amount?: number;
+    commission_pct?: number;
+    commission_amount?: number;
+    deal_date: string;
+  }>;
+  rental_history?: Array<{
+    id: string;
+    tenant?: { id: string; name: string; phone?: string; email?: string };
+    start_date: string;
+    end_date: string;
+    rent_amount?: number;
+    security_deposit?: number;
+    version: number;
+    status: string;
+  }>;
 }
 
 export interface PropertiesResponse {
@@ -91,10 +117,13 @@ export const propertyService = {
     price_max?: number;
   }): Promise<PropertiesResponse> {
     try {
-      const response = await apiClient.get<PropertiesResponse>('/admin/properties', { params });
+      const response = await apiClient.get<PropertiesResponse>(
+        "/admin/properties",
+        { params },
+      );
       return response.data;
     } catch (error) {
-      console.warn('Admin properties endpoint not available, using mock data');
+      console.warn("Admin properties endpoint not available, using mock data");
       throw new Error(handleApiError(error));
     }
   },
@@ -110,7 +139,10 @@ export const propertyService = {
 
   async create(data: CreatePropertyData): Promise<Property> {
     try {
-      const response = await apiClient.post<Property>('/admin/properties', data);
+      const response = await apiClient.post<Property>(
+        "/admin/properties",
+        data,
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -119,7 +151,10 @@ export const propertyService = {
 
   async update(id: string, data: UpdatePropertyData): Promise<Property> {
     try {
-      const response = await apiClient.put<Property>(`/admin/properties/${id}`, data);
+      const response = await apiClient.put<Property>(
+        `/admin/properties/${id}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -135,18 +170,31 @@ export const propertyService = {
   },
 
   // Company-scoped operations
-  async createForCompany(companyId: string, data: CreatePropertyData): Promise<Property> {
+  async createForCompany(
+    companyId: string,
+    data: CreatePropertyData,
+  ): Promise<Property> {
     try {
-      const response = await apiClient.post<Property>(`/admin/companies/${companyId}/properties`, data);
+      const response = await apiClient.post<Property>(
+        `/admin/companies/${companyId}/properties`,
+        data,
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 
-  async updateForCompany(companyId: string, propertyId: string, data: UpdatePropertyData): Promise<Property> {
+  async updateForCompany(
+    companyId: string,
+    propertyId: string,
+    data: UpdatePropertyData,
+  ): Promise<Property> {
     try {
-      const response = await apiClient.put<Property>(`/admin/companies/${companyId}/properties/${propertyId}`, data);
+      const response = await apiClient.put<Property>(
+        `/admin/companies/${companyId}/properties/${propertyId}`,
+        data,
+      );
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -155,10 +203,11 @@ export const propertyService = {
 
   async deleteForCompany(companyId: string, propertyId: string): Promise<void> {
     try {
-      await apiClient.delete(`/admin/companies/${companyId}/properties/${propertyId}`);
+      await apiClient.delete(
+        `/admin/companies/${companyId}/properties/${propertyId}`,
+      );
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   },
 };
-

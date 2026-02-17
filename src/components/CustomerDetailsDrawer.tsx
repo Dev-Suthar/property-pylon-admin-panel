@@ -84,13 +84,13 @@ export function CustomerDetailsDrawer({
   onOpenChange,
 }: CustomerDetailsDrawerProps) {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
-    null
+    null,
   );
   const [isPropertyDrawerOpen, setIsPropertyDrawerOpen] = useState(false);
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [noteType, setNoteType] = useState<"general" | "issue" | "positive">(
-    "general"
+    "general",
   );
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -387,6 +387,19 @@ export function CustomerDetailsDrawer({
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(customerData as any).requirement_type && (
+                          <div>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Requirement Type
+                            </p>
+                            <Badge variant="outline" className="capitalize">
+                              {(customerData as any).requirement_type ===
+                                "want_to_buy" && "Want to Buy"}
+                              {(customerData as any).requirement_type ===
+                                "want_to_rent" && "Want to Rent"}
+                            </Badge>
+                          </div>
+                        )}
                         <div>
                           <p className="text-sm font-medium text-slate-700 mb-2">
                             Budget Range
@@ -394,11 +407,31 @@ export function CustomerDetailsDrawer({
                           <p className="text-lg font-semibold text-slate-900">
                             {customerData.budget_min && customerData.budget_max
                               ? `${formatCurrency(
-                                  customerData.budget_min
+                                  customerData.budget_min,
                                 )} - ${formatCurrency(customerData.budget_max)}`
                               : "Not specified"}
                           </p>
                         </div>
+                        {(customerData as any).preferred_area && (
+                          <div>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Preferred Area
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {(customerData as any).preferred_area}
+                            </p>
+                          </div>
+                        )}
+                        {(customerData as any).timeline && (
+                          <div>
+                            <p className="text-sm font-medium text-slate-700 mb-2">
+                              Timeline
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {(customerData as any).timeline}
+                            </p>
+                          </div>
+                        )}
                         {customerData.preferred_bhk &&
                           customerData.preferred_bhk.length > 0 && (
                             <div>
@@ -460,7 +493,7 @@ export function CustomerDetailsDrawer({
                                     >
                                       {feature}
                                     </Badge>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -477,7 +510,7 @@ export function CustomerDetailsDrawer({
                                     <Badge key={idx} variant="outline">
                                       {feature}
                                     </Badge>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -597,7 +630,7 @@ export function CustomerDetailsDrawer({
                           <div
                             key={note.id}
                             className={`p-4 rounded-lg border ${getNoteTypeColor(
-                              note.type
+                              note.type,
                             )}`}
                           >
                             <div className="flex items-start justify-between mb-2">
@@ -617,7 +650,7 @@ export function CustomerDetailsDrawer({
                               <span className="text-xs text-slate-500">
                                 {format(
                                   new Date(note.created_at),
-                                  "MMM d, yyyy h:mm a"
+                                  "MMM d, yyyy h:mm a",
                                 )}
                               </span>
                             </div>
@@ -677,7 +710,7 @@ export function CustomerDetailsDrawer({
                                     <Clock className="h-3 w-3" />
                                     {format(
                                       new Date(activity.date),
-                                      "MMM d, yyyy h:mm a"
+                                      "MMM d, yyyy h:mm a",
                                     )}
                                   </span>
                                 )}
@@ -706,8 +739,8 @@ export function CustomerDetailsDrawer({
                       {customerData.type === "buyer"
                         ? "Properties suggested for this buyer"
                         : customerData.type === "owner"
-                        ? "Properties owned by this seller"
-                        : "Properties linked to this customer"}
+                          ? "Properties owned by this seller"
+                          : "Properties linked to this customer"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -810,10 +843,11 @@ export function CustomerDetailsDrawer({
                                           item.visit_status === "visited"
                                             ? "success"
                                             : item.visit_status === "scheduled"
-                                            ? "default"
-                                            : item.visit_status === "interested"
-                                            ? "default"
-                                            : "secondary"
+                                              ? "default"
+                                              : item.visit_status ===
+                                                  "interested"
+                                                ? "default"
+                                                : "secondary"
                                         }
                                         className="capitalize"
                                       >
@@ -821,7 +855,7 @@ export function CustomerDetailsDrawer({
                                       </Badge>
                                     </TableCell>
                                   </TableRow>
-                                )
+                                ),
                               )}
                             </TableBody>
                           </Table>
