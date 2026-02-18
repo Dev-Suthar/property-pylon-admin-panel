@@ -39,6 +39,12 @@ const mockStats = {
   totalProperties: 5678,
   totalCustomers: 3456,
   activeSubscriptions: 20,
+  total_properties_for_sale: 15,
+  total_properties_for_rent: 10,
+  total_buyer_requirements_sale: 5,
+  total_buyer_requirements_rent: 3,
+  expiring_agreements_count: 2,
+  active_rentals_count: 8,
   revenue: {
     mrr: 35000,
     arr: 420000,
@@ -153,6 +159,16 @@ export function Dashboard() {
             title: "Expiring Agreements (30d)",
             value: stats.expiring_agreements_count.toLocaleString(),
             icon: AlertCircle,
+            change: "",
+          },
+        ]
+      : []),
+    ...(stats.active_rentals_count !== undefined
+      ? [
+          {
+            title: "Active Rentals",
+            value: stats.active_rentals_count.toLocaleString(),
+            icon: Home,
             change: "",
           },
         ]

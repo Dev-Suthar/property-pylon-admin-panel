@@ -118,7 +118,7 @@ export function Reports() {
   const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
 
   const downloadMutation = useMutation({
-    mutationFn: ({ id, format }: { id: string; format: 'json' | 'csv' }) => {
+    mutationFn: ({ id, format }: { id: string; format: 'json' | 'csv' | 'pdf' }) => {
       setDownloadingReportId(id);
       return reportService.download(id, format);
     },
@@ -450,13 +450,14 @@ export function Reports() {
           ) : (
           <ResponsiveContainer width="100%" height={300}>
               <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="revenue" fill="#8884d8" />
-            </BarChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="subscription_revenue" name="Subscriptions" stackId="a" fill="#8884d8" />
+                <Bar dataKey="commission_revenue" name="Commissions" stackId="a" fill="#82ca9d" />
+              </BarChart>
           </ResponsiveContainer>
           )}
         </CardContent>

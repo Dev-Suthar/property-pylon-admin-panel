@@ -11,6 +11,7 @@ export interface DashboardStats {
   total_buyer_requirements_sale?: number;
   total_buyer_requirements_rent?: number;
   expiring_agreements_count?: number;
+  active_rentals_count?: number;
   revenue: {
     mrr: number;
     arr: number;
@@ -31,6 +32,8 @@ export interface SubscriptionDistribution {
 export interface RevenueData {
   month: string;
   revenue: number;
+  subscription_revenue?: number;
+  commission_revenue?: number;
 }
 
 export interface DashboardData {
