@@ -2,8 +2,8 @@
 
 ## Automatic deploy (GitHub Actions)
 
-Every push to `main` builds the panel and uploads `dist/` to Hostinger over FTP
-(`.github/workflows/deploy.yml`). Run it manually from **Actions → Deploy admin.dreamtobuy.com → Run workflow**.
+The workflow (`.github/workflows/deploy.yml`) builds the panel and uploads `dist/` to Hostinger over FTP.
+It is **manual only**: run it from **Actions → Deploy admin.dreamtobuy.com → Run workflow**.
 
 One-time setup in this repo → **Settings → Secrets and variables → Actions**:
 

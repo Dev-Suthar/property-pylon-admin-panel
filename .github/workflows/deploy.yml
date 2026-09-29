@@ -1,8 +1,9 @@
 name: Deploy admin.dreamtobuy.com
 
+# Manual only for now (production backend is offline). To deploy: Actions →
+# "Deploy admin.dreamtobuy.com" → Run workflow. Re-add `push: branches: [main]`
+# to deploy automatically again.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Never run two deploys at once; a newer push cancels an in-flight one.
