@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,16 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Return to the page that sent us to /login (deep link / expired session).
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  const target = from && from !== '/login' ? from : '/dashboard';
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      navigate('/dashboard');
+      navigate(target, { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, navigate, target]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +33,7 @@ export function Login() {
     
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {

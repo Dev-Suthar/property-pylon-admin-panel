@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { companyService } from "@/services/companyService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +139,12 @@ type ViewMode = "table" | "grid";
 export function Customers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: companiesData } = useQuery({
+    queryKey: ["companies"],
+    queryFn: () => companyService.getAll({ limit: 100 }),
+  });
+  const companies = companiesData?.companies || [];
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -342,6 +349,7 @@ export function Customers() {
 
   const handleCreate = (formData: FormData) => {
     const data: CreateCustomerData = {
+      company_id: formData.get("company_id") as string,
       name: formData.get("name") as string,
       email: formData.get("email") as string || undefined,
       phone: formData.get("phone") as string || undefined,
@@ -914,6 +922,21 @@ export function Customers() {
             }}
           >
             <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="company_id">Company *</Label>
+                <Select name="company_id" required>
+                  <SelectTrigger id="company_id">
+                    <SelectValue placeholder="Select a company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name *</Label>

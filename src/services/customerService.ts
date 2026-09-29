@@ -25,6 +25,8 @@ export interface CustomersResponse {
 }
 
 export interface CreateCustomerData {
+  /** Required when creating from the global Customers page. */
+  company_id?: string;
   name: string;
   email?: string;
   phone?: string;

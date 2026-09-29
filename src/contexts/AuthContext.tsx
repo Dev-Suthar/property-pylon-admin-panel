@@ -19,6 +19,10 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
+const ADMIN_ROLES = (import.meta.env.VITE_ADMIN_ROLES || 'super_admin')
+  .split(',')
+  .map((role: string) => role.trim());
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,7 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: email,
         password,
       });
-      
+
+      // The admin panel is for platform admins only; agency (broker) accounts
+      // get 403 from every /admin endpoint, so stop them here with a clear message.
+      if (!ADMIN_ROLES.includes(response.user.role)) {
+        throw new Error('This account does not have access to the admin panel.');
+      }
+
       setUser(response.user);
       setToken(response.token);
       localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, response.token);
