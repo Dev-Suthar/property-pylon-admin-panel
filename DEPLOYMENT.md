@@ -1,5 +1,24 @@
 # Deployment Guide for admin.dreamtobuy.com
 
+## Automatic deploy (GitHub Actions)
+
+Every push to `main` builds the panel and uploads `dist/` to Hostinger over FTP
+(`.github/workflows/deploy.yml`). Run it manually from **Actions → Deploy admin.dreamtobuy.com → Run workflow**.
+
+One-time setup in this repo → **Settings → Secrets and variables → Actions**:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| Secret | `FTP_SERVER` | Hostinger FTP host (hPanel → Files → FTP Accounts) |
+| Secret | `FTP_USERNAME` | FTP username |
+| Secret | `FTP_PASSWORD` | FTP password |
+| Variable | `FTP_SERVER_DIR` | Folder of the `admin` subdomain as seen by that FTP account, ending in `/` (e.g. `admin/` or `domains/dreamtobuy.com/public_html/admin/`) |
+| Variable (optional) | `VITE_API_URL` | Defaults to `https://api.dreamtobuy.com/api/v1` |
+| Variable (optional) | `FTP_PROTOCOL` | `ftps` (default) or `ftp` |
+
+Until the three secrets exist, the workflow builds and skips the upload with a warning.
+The manual steps below still work.
+
 This guide walks you through deploying the Property Pylon Admin Panel to `admin.dreamtobuy.com` on Hostinger shared hosting.
 
 ## Prerequisites
