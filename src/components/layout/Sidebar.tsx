@@ -11,14 +11,14 @@ import {
   Bell,
   FileCode2,
   Smartphone,
-  DollarSign,
-} from 'lucide-react';
+  DollarSign, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Building2, label: 'Companies', path: '/companies' },
+  { icon: Briefcase, label: 'Agency Workspace', path: '/workspace' },
   { icon: UserCog, label: 'Salesmen', path: '/salesmen' },
   { icon: CreditCard, label: 'Subscriptions', path: '/subscriptions' },
   { icon: DollarSign, label: 'Cost Tracking', path: '/billing' },

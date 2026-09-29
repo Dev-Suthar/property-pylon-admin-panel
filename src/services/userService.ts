@@ -89,9 +89,10 @@ export const userService = {
     }
   },
 
-  async resetPassword(id: string): Promise<void> {
+  async resetPassword(id: string): Promise<{ temporaryPassword?: string }> {
     try {
-      await apiClient.post(`/admin/users/${id}/reset-password`);
+      const response = await apiClient.post(`/admin/users/${id}/reset-password`);
+      return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }

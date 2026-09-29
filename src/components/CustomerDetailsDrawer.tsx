@@ -62,6 +62,7 @@ import {
 import { Property } from "@/services/propertyService";
 import { PropertyDetailsDrawer } from "@/components/PropertyDetailsDrawer";
 import { format } from "date-fns";
+import { CustomerManagePanel } from "@/components/CustomerManagePanel";
 import { Plus } from "lucide-react";
 import {
   Table,
@@ -289,6 +290,10 @@ export function CustomerDetailsDrawer({
               </Alert>
             ) : (
               <>
+                {(customerData as any)?.company_id ? (
+                  <CustomerManagePanel customer={customerData as any} notes={notes as any[]} />
+                ) : null}
+
                 {/* Customer Information */}
                 <Card className="border-0 shadow-lg">
                   <CardHeader>

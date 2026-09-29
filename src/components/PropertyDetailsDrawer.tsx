@@ -56,6 +56,7 @@ import { noteService } from "@/services/noteService";
 import { activityService } from "@/services/activityService";
 import { relationshipService } from "@/services/relationshipService";
 import { format } from "date-fns";
+import { PropertyManagePanel } from "@/components/PropertyManagePanel";
 
 interface PropertyDetailsDrawerProps {
   property: Property | null;
@@ -303,6 +304,14 @@ export function PropertyDetailsDrawer({
               </Alert>
             ) : (
               <>
+                {displayProperty?.id && displayProperty?.company_id ? (
+                  <PropertyManagePanel
+                    property={displayProperty as any}
+                    media={allMedia}
+                    notes={((notesData as any)?.data ?? []) as any[]}
+                  />
+                ) : null}
+
                 {/* Media Gallery */}
                 {hasMedia && (
                   <Card>

@@ -7,6 +7,7 @@ import { Toaster } from './components/ui/toaster';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Companies } from './pages/Companies';
+import Workspace from './pages/Workspace';
 import { Users } from './pages/Users';
 import { Properties } from './pages/Properties';
 import { Customers } from './pages/Customers';
@@ -53,6 +54,16 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Dashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Workspace />
                   </MainLayout>
                 </ProtectedRoute>
               }

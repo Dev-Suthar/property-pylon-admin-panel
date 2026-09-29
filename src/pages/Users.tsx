@@ -170,6 +170,33 @@ export function Users() {
     },
   });
 
+  // Row actions (previously Edit / Reset Password menu items did nothing)
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [tempPassword, setTempPassword] = useState<{ name: string; password: string } | null>(null);
+  const actionError = (error: Error) => toast({ title: 'Error', description: error.message, variant: 'destructive' });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) => userService.update(id, data as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditingUser(null);
+      toast({ title: 'Success', description: 'User updated' });
+    },
+    onError: actionError,
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => userService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: 'Success', description: 'User deleted' });
+    },
+    onError: actionError,
+  });
+  const resetMutation = useMutation({
+    mutationFn: (u: User) => userService.resetPassword(u.id).then((r) => ({ u, r })),
+    onSuccess: ({ u, r }) => setTempPassword({ name: u.name, password: r?.temporaryPassword ?? '' }),
+    onError: actionError,
+  });
+
   const handleCreate = (formData: FormData) => {
     createMutation.mutate({
       name: formData.get('name') as string,
@@ -432,12 +459,21 @@ export function Users() {
                             </TooltipContent>
                           </Tooltip>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => setEditingUser(user)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => confirm(`Reset password for ${user.name}?`) && resetMutation.mutate(user)}
+                            >
                               Reset Password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600"
+                              onClick={() => confirm(`Delete ${user.name}? This cannot be undone.`) && deleteMutation.mutate(user.id)}
+                            >
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -498,6 +534,73 @@ export function Users() {
           )}
         </div>
       )}
+      <Dialog open={!!editingUser} onOpenChange={(o) => !o && setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit user</DialogTitle>
+          </DialogHeader>
+          {editingUser ? (
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const f = new FormData(e.currentTarget);
+                updateMutation.mutate({
+                  id: editingUser.id,
+                  data: {
+                    name: f.get('name') as string,
+                    email: f.get('email') as string,
+                    phone: (f.get('phone') as string) || undefined,
+                    role: f.get('role') as string,
+                    is_active: f.get('is_active') === 'true',
+                  },
+                });
+              }}
+            >
+              <div className="space-y-2"><Label htmlFor="edit-name">Name</Label><Input id="edit-name" name="name" defaultValue={editingUser.name} required /></div>
+              <div className="space-y-2"><Label htmlFor="edit-email">Email</Label><Input id="edit-email" name="email" type="email" defaultValue={editingUser.email} required /></div>
+              <div className="space-y-2"><Label htmlFor="edit-phone">Phone</Label><Input id="edit-phone" name="phone" defaultValue={editingUser.phone ?? ''} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Select name="role" defaultValue={editingUser.role}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {['admin', 'manager', 'agent'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select name="is_active" defaultValue={String(editingUser.is_active)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={updateMutation.isPending}>{updateMutation.isPending ? 'Saving…' : 'Save'}</Button>
+              </DialogFooter>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!tempPassword} onOpenChange={(o) => !o && setTempPassword(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password reset</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600">Share this temporary password with {tempPassword?.name}. Ask them to change it after signing in.</p>
+          <Input readOnly value={tempPassword?.password ?? ''} className="font-mono" onFocus={(e) => e.currentTarget.select()} />
+          <DialogFooter>
+            <Button onClick={() => navigator.clipboard?.writeText(tempPassword?.password ?? '')}>Copy</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
