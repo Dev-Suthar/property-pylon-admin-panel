@@ -42,52 +42,32 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Plus, Search, Edit, MoreVertical, User as UserIcon } from 'lucide-react';
+import { Plus, Search, Edit, MoreVertical, User as UserIcon, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { userService, User } from '@/services/userService';
+import { companyService } from '@/services/companyService';
 import { useToast } from '@/hooks/use-toast';
 
-// Mock data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@eliteproperties.com',
-    company_id: '1',
-    role: 'admin',
-    is_active: true,
-    last_login: '2024-06-15T10:30:00Z',
-    created_at: '2024-01-15T00:00:00Z',
-    updated_at: '2024-01-15T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@deventerprise.com',
-    company_id: '2',
-    role: 'manager',
-    is_active: true,
-    last_login: '2024-06-14T15:45:00Z',
-    created_at: '2024-02-20T00:00:00Z',
-    updated_at: '2024-02-20T00:00:00Z',
-  },
-  {
-    id: '3',
-    name: 'Bob Johnson',
-    email: 'bob@ravalsolution.com',
-    company_id: '3',
-    role: 'agent',
-    is_active: false,
-    last_login: '2024-06-10T09:20:00Z',
-    created_at: '2024-03-10T00:00:00Z',
-    updated_at: '2024-03-10T00:00:00Z',
-  },
-];
+const ROLE_OPTIONS = [
+  { value: 'owner', label: 'Owner' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'agent', label: 'Agent' },
+  { value: 'telecaller', label: 'Telecaller' },
+] as const;
+
+// Legacy 'admin' role is displayed as Owner
+const getRoleLabel = (role?: string) => {
+  if (!role) return '—';
+  if (role === 'admin') return 'Owner';
+  const match = ROLE_OPTIONS.find((r) => r.value === role);
+  return match ? match.label : role.charAt(0).toUpperCase() + role.slice(1);
+};
 
 // Skeleton loader component
 const TableSkeleton = () => (
@@ -121,16 +101,38 @@ export function Users() {
   const { toast } = useToast();
   const limit = 10;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['users', page, limit, searchQuery],
     queryFn: () => userService.getAll({ page, limit, search: searchQuery }),
     retry: false,
     placeholderData: (previousData) => previousData,
   });
 
+  const { data: companiesData, isLoading: companiesLoading } = useQuery({
+    queryKey: ['companies', 'user-form-options'],
+    queryFn: () => companyService.getAll({ limit: 100 }),
+    retry: false,
+  });
+
+  const companyOptions = useMemo(
+    () => (companiesData?.companies || []).filter((c) => c.name !== 'System'),
+    [companiesData?.companies]
+  );
+
+  const companyNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    (companiesData?.companies || []).forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [companiesData?.companies]);
+
+  const getCompanyName = (user: User) => {
+    const embedded = (user as User & { Company?: { name?: string }; company?: { name?: string } });
+    return embedded.Company?.name || embedded.company?.name || companyNameById.get(user.company_id) || '—';
+  };
+
   // Ensure unique users by id to prevent duplicates
   const users = useMemo(() => {
-    const rawUsers = data?.users || (error ? mockUsers : []);
+    const rawUsers = data?.users || [];
     // Deduplicate by id
     const uniqueMap = new Map();
     rawUsers.forEach((user: User) => {
@@ -139,7 +141,7 @@ export function Users() {
       }
     });
     return Array.from(uniqueMap.values());
-  }, [data?.users, error]);
+  }, [data?.users]);
   
   const total = data?.total || users.length;
   const totalPages = Math.ceil(total / limit);
@@ -306,9 +308,17 @@ export function Users() {
                       <SelectValue placeholder="Select company" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Elite Properties</SelectItem>
-                      <SelectItem value="2">Dev Enterprise Company</SelectItem>
-                      <SelectItem value="3">Raval Solution</SelectItem>
+                      {companiesLoading ? (
+                        <div className="px-2 py-1.5 text-sm text-slate-500">Loading companies...</div>
+                      ) : companyOptions.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-slate-500">No companies available</div>
+                      ) : (
+                        companyOptions.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,10 +329,11 @@ export function Users() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
-                      <SelectItem value="telecaller">Telecaller</SelectItem>
+                      {ROLE_OPTIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>
+                          {r.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -359,6 +370,23 @@ export function Users() {
           />
         </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load users: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? 'Retrying...' : 'Retry'}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {isLoading ? (
         <div className="rounded-xl border-0 bg-white shadow-lg p-4">
@@ -421,11 +449,11 @@ export function Users() {
                       <TruncatedText text={user.email} maxLength={30} />
                     </TableCell>
                     <TableCell className="text-gray-600 hidden lg:table-cell">
-                      Company Name
+                      {getCompanyName(user)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {user.role || 'agent'}
+                      <Badge variant="outline">
+                        {getRoleLabel(user.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -564,10 +592,10 @@ export function Users() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Role</Label>
-                  <Select name="role" defaultValue={editingUser.role}>
+                  <Select name="role" defaultValue={editingUser.role === 'admin' ? 'owner' : editingUser.role}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {['owner', 'manager', 'agent', 'telecaller'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {ROLE_OPTIONS.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

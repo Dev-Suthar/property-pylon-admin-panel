@@ -1,34 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { CONFIG } from './config';
+import { endViewAs, viewAsTokenFor } from './viewAs';
 
-// Use proxy to avoid CORS issues and mixed content problems
-const getApiBaseUrl = () => {
-  // Check if VITE_API_URL is explicitly set (for development)
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl) return envUrl;
-  
-  // In development (localhost), always use relative path to go through Vite proxy
-  // This avoids CORS issues when making requests to the backend API
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    
-    // For localhost development, use relative path that goes through Vite proxy
-    // The Vite proxy forwards to the proxy server, which forwards to the backend
-    if (isLocalhost) {
-      return '/api';
-    }
-    
-    // In production (deployed), use relative path that goes through proxy
-    // This works for both HTTP and HTTPS
-    return '/api';
-  }
-  
-  // Fallback (shouldn't normally reach here)
-  return '/api';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+// One source of truth for the API URL: VITE_API_URL, else lib/config/environment.ts.
+const API_BASE_URL = CONFIG.API_BASE_URL;
 
 class ApiClient {
   private client: AxiosInstance;
@@ -59,6 +34,12 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        // Read-only "view as": that company's calls go out as the viewed user.
+        const viewAs = viewAsTokenFor(config.url);
+        if (viewAs) {
+          config.headers.Authorization = `Bearer ${viewAs}`;
+          (config as { _viewAs?: boolean })._viewAs = true;
+        }
         
         return config;
       },
@@ -79,7 +60,10 @@ class ApiClient {
         }
         
         // Handle 401 Unauthorized (matching mobile app)
-        if (response.status === 401) {
+        if (response.status === 401 && (response.config as { _viewAs?: boolean })._viewAs) {
+          // The view-as session expired: end it, keep the admin signed in.
+          endViewAs();
+        } else if (response.status === 401) {
           localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
           localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
           window.location.href = '/login';
@@ -94,7 +78,9 @@ class ApiClient {
         }
         
         // Handle 401 Unauthorized
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && (error.config as { _viewAs?: boolean } | undefined)?._viewAs) {
+          endViewAs();
+        } else if (error.response?.status === 401) {
           localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
           localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
           window.location.href = '/login';

@@ -11,7 +11,6 @@ import {
   Users,
   Home,
   UsersRound,
-  TrendingUp,
   AlertCircle,
 } from "lucide-react";
 import {
@@ -31,145 +30,111 @@ import {
 } from "recharts";
 import { dashboardService } from "@/services/dashboardService";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
-// Mock data fallback
-const mockStats = {
-  totalCompanies: 24,
-  totalUsers: 1234,
-  totalProperties: 5678,
-  totalCustomers: 3456,
-  activeSubscriptions: 20,
-  total_properties_for_sale: 15,
-  total_properties_for_rent: 10,
-  total_buyer_requirements_sale: 5,
-  total_buyer_requirements_rent: 3,
-  expiring_agreements_count: 2,
-  active_rentals_count: 8,
-  revenue: {
-    mrr: 35000,
-    arr: 420000,
-  },
-};
-
-const mockCompanyGrowth = [
-  { month: "Jan", companies: 20 },
-  { month: "Feb", companies: 22 },
-  { month: "Mar", companies: 21 },
-  { month: "Apr", companies: 23 },
-  { month: "May", companies: 24 },
-  { month: "Jun", companies: 24 },
+const PIE_FALLBACK_COLORS = [
+  "rgb(var(--tw-blue-500))",
+  "rgb(var(--tw-emerald-500))",
+  "rgb(var(--tw-amber-500))",
+  "rgb(var(--tw-purple-500))",
+  "rgb(var(--tw-pink-500))",
 ];
 
-const mockSubscriptionData = [
-  { name: "Basic", value: 8, color: "#8884d8" },
-  { name: "Professional", value: 12, color: "#82ca9d" },
-  { name: "Enterprise", value: 4, color: "#ffc658" },
-];
+const formatCount = (value?: number | null) =>
+  typeof value === "number" ? value.toLocaleString() : "—";
 
-const mockRevenueData = [
-  { month: "Jan", revenue: 24000 },
-  { month: "Feb", revenue: 26000 },
-  { month: "Mar", revenue: 28000 },
-  { month: "Apr", revenue: 30000 },
-  { month: "May", revenue: 32000 },
-  { month: "Jun", revenue: 35000 },
-];
+function ChartEmptyState({ message = "No data yet" }: { message?: string }) {
+  return (
+    <div className="flex h-[300px] items-center justify-center text-sm text-slate-500">
+      {message}
+    </div>
+  );
+}
 
 export function Dashboard() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dashboardService.getDashboardData(),
     retry: false,
   });
 
-  const stats = data?.stats || mockStats;
-  const companyGrowth = data?.companyGrowth || mockCompanyGrowth;
-  const subscriptionData =
-    data?.subscriptionDistribution || mockSubscriptionData;
-  const revenueData = data?.revenue || mockRevenueData;
+  const stats = data?.stats;
+  const companyGrowth = data?.companyGrowth ?? [];
+  const subscriptionData = data?.subscriptionDistribution ?? [];
+  const revenueData = data?.revenue ?? [];
 
   const statsCards = [
     {
       title: "Total Companies",
-      value: stats.totalCompanies.toLocaleString(),
+      value: formatCount(stats?.totalCompanies),
       icon: Building2,
-      change: "+12%",
     },
     {
       title: "Total Users",
-      value: stats.totalUsers.toLocaleString(),
+      value: formatCount(stats?.totalUsers),
       icon: Users,
-      change: "+8%",
     },
     {
       title: "Total Properties",
-      value: stats.totalProperties.toLocaleString(),
+      value: formatCount(stats?.totalProperties),
       icon: Home,
-      change: "+15%",
     },
     {
       title: "Total Customers",
-      value: stats.totalCustomers.toLocaleString(),
+      value: formatCount(stats?.totalCustomers),
       icon: UsersRound,
-      change: "+10%",
     },
-    ...(stats.total_properties_for_sale !== undefined
+    ...(stats?.total_properties_for_sale !== undefined
       ? [
           {
             title: "Properties For Sale",
-            value: stats.total_properties_for_sale.toLocaleString(),
+            value: formatCount(stats?.total_properties_for_sale),
             icon: Home,
-            change: "",
           },
         ]
       : []),
-    ...(stats.total_properties_for_rent !== undefined
+    ...(stats?.total_properties_for_rent !== undefined
       ? [
           {
             title: "Properties For Rent",
-            value: stats.total_properties_for_rent.toLocaleString(),
+            value: formatCount(stats?.total_properties_for_rent),
             icon: Home,
-            change: "",
           },
         ]
       : []),
-    ...(stats.total_buyer_requirements_sale !== undefined
+    ...(stats?.total_buyer_requirements_sale !== undefined
       ? [
           {
             title: "Buyers (Want to Buy)",
-            value: stats.total_buyer_requirements_sale.toLocaleString(),
+            value: formatCount(stats?.total_buyer_requirements_sale),
             icon: UsersRound,
-            change: "",
           },
         ]
       : []),
-    ...(stats.total_buyer_requirements_rent !== undefined
+    ...(stats?.total_buyer_requirements_rent !== undefined
       ? [
           {
             title: "Buyers (Want to Rent)",
-            value: stats.total_buyer_requirements_rent.toLocaleString(),
+            value: formatCount(stats?.total_buyer_requirements_rent),
             icon: UsersRound,
-            change: "",
           },
         ]
       : []),
-    ...(stats.expiring_agreements_count !== undefined
+    ...(stats?.expiring_agreements_count !== undefined
       ? [
           {
             title: "Expiring Agreements (30d)",
-            value: stats.expiring_agreements_count.toLocaleString(),
+            value: formatCount(stats?.expiring_agreements_count),
             icon: AlertCircle,
-            change: "",
           },
         ]
       : []),
-    ...(stats.active_rentals_count !== undefined
+    ...(stats?.active_rentals_count !== undefined
       ? [
           {
             title: "Active Rentals",
-            value: stats.active_rentals_count.toLocaleString(),
+            value: formatCount(stats?.active_rentals_count),
             icon: Home,
-            change: "",
           },
         ]
       : []),
@@ -187,10 +152,18 @@ export function Dashboard() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load dashboard: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -245,13 +218,6 @@ export function Dashboard() {
                     <div className="text-3xl font-bold text-slate-900 mb-2">
                       {stat.value}
                     </div>
-                    <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5 text-green-500" />
-                      <span className="font-medium text-green-600">
-                        {stat.change}
-                      </span>
-                      <span>from last month</span>
-                    </p>
                   </CardContent>
                 </Card>
               );
@@ -269,19 +235,22 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
+                {companyGrowth.length === 0 ? (
+                  <ChartEmptyState />
+                ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={companyGrowth}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--tw-slate-200))" />
                     <XAxis
                       dataKey="month"
-                      stroke="#64748b"
+                      stroke="rgb(var(--tw-slate-500))"
                       style={{ fontSize: "12px" }}
                     />
-                    <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                    <YAxis stroke="rgb(var(--tw-slate-500))" style={{ fontSize: "12px" }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #e2e8f0",
+                        backgroundColor: "rgb(var(--tw-white))",
+                        border: "1px solid rgb(var(--tw-slate-200))",
                         borderRadius: "8px",
                         boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                       }}
@@ -290,13 +259,14 @@ export function Dashboard() {
                     <Line
                       type="monotone"
                       dataKey="companies"
-                      stroke="#3b82f6"
+                      stroke="rgb(var(--tw-blue-500))"
                       strokeWidth={3}
-                      dot={{ fill: "#3b82f6", r: 5 }}
+                      dot={{ fill: "rgb(var(--tw-blue-500))", r: 5 }}
                       activeDot={{ r: 7 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -310,6 +280,9 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
+                {subscriptionData.length === 0 ? (
+                  <ChartEmptyState />
+                ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -321,23 +294,30 @@ export function Dashboard() {
                         `${name} ${(percent * 100).toFixed(0)}%`
                       }
                       outerRadius={90}
-                      fill="#8884d8"
+                      fill="rgb(var(--tw-blue-500))"
                       dataKey="value"
                     >
                       {subscriptionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.color ||
+                            PIE_FALLBACK_COLORS[index % PIE_FALLBACK_COLORS.length]
+                          }
+                        />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #e2e8f0",
+                        backgroundColor: "rgb(var(--tw-white))",
+                        border: "1px solid rgb(var(--tw-slate-200))",
                         borderRadius: "8px",
                         boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -352,19 +332,22 @@ export function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
+              {revenueData.length === 0 ? (
+                <ChartEmptyState />
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--tw-slate-200))" />
                   <XAxis
                     dataKey="month"
-                    stroke="#64748b"
+                    stroke="rgb(var(--tw-slate-500))"
                     style={{ fontSize: "12px" }}
                   />
-                  <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="rgb(var(--tw-slate-500))" style={{ fontSize: "12px" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e2e8f0",
+                      backgroundColor: "rgb(var(--tw-white))",
+                      border: "1px solid rgb(var(--tw-slate-200))",
                       borderRadius: "8px",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
@@ -385,12 +368,12 @@ export function Dashboard() {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#10b981"
+                          stopColor="rgb(var(--tw-emerald-500))"
                           stopOpacity={0.8}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#059669"
+                          stopColor="rgb(var(--tw-emerald-600))"
                           stopOpacity={0.8}
                         />
                       </linearGradient>
@@ -398,6 +381,7 @@ export function Dashboard() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </>

@@ -94,7 +94,18 @@ export interface PipelineColumn {
 
 const qs = (params: Record<string, unknown>) => ({ params: Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '')) });
 
+export interface CompanyStats {
+  today?: { follow_ups_due: number; overdue: number; visits_today: number; new_leads: number; hot_leads: number };
+  leads_by_stage?: Record<string, number>;
+  total_customers?: number;
+  active_properties?: number;
+  deals_closed_this_month?: number;
+  visits_this_week?: number;
+}
+
 export const workspaceService = {
+  stats: (cid: string) => call<CompanyStats>(() => apiClient.get(`${base(cid)}/dashboard/stats`)),
+
   // Visits
   visits: (cid: string, params: { status?: string; page?: number; limit?: number } = {}) =>
     call<any>(() => apiClient.get(`${base(cid)}/visits`, qs({ limit: 50, ...params }))),

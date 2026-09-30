@@ -383,7 +383,7 @@ export function Reports() {
                 <Line
                   type="monotone"
                   dataKey="companies"
-                  stroke="#8884d8"
+                  stroke="rgb(var(--tw-blue-500))"
                   strokeWidth={2}
                 />
               </LineChart>
@@ -418,7 +418,7 @@ export function Reports() {
                     `${name} ${(percent * 100).toFixed(0)}%`
                   }
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="rgb(var(--tw-blue-500))"
                   dataKey="value"
                 >
                     {subscriptionDistribution.map((entry, index) => (
@@ -455,8 +455,8 @@ export function Reports() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="subscription_revenue" name="Subscriptions" stackId="a" fill="#8884d8" />
-                <Bar dataKey="commission_revenue" name="Commissions" stackId="a" fill="#82ca9d" />
+                <Bar dataKey="subscription_revenue" name="Subscriptions" stackId="a" fill="rgb(var(--tw-blue-500))" />
+                <Bar dataKey="commission_revenue" name="Commissions" stackId="a" fill="rgb(var(--tw-emerald-500))" />
               </BarChart>
           </ResponsiveContainer>
           )}

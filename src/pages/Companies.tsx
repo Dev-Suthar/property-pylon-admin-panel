@@ -73,40 +73,6 @@ import { companyService, Company, UpdateCompanyData } from "@/services/companySe
 import { useToast } from "@/hooks/use-toast";
 import { CompanyDetailsDrawer } from "@/components/CompanyDetailsDrawer";
 
-// Mock data fallback
-const mockCompanies: Company[] = [
-  {
-    id: "1",
-    name: "Elite Properties",
-    email: "contact@eliteproperties.com",
-    phone: "+91 98765 43210",
-    address: "Iscon Cross Road, Ahmedabad",
-    is_active: true,
-    created_at: "2024-01-15T00:00:00Z",
-    updated_at: "2024-01-15T00:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Dev Enterprise Company",
-    email: "contact@deventerprise.com",
-    phone: "+91 98765 43211",
-    address: "Prahladnagar, Ahmedabad",
-    is_active: true,
-    created_at: "2024-02-20T00:00:00Z",
-    updated_at: "2024-02-20T00:00:00Z",
-  },
-  {
-    id: "3",
-    name: "Raval Solution",
-    email: "contact@ravalsolution.com",
-    phone: "+91 98765 43212",
-    address: "Satellite, Ahmedabad",
-    is_active: false,
-    created_at: "2024-03-10T00:00:00Z",
-    updated_at: "2024-03-10T00:00:00Z",
-  },
-];
-
 // Skeleton loader component
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
@@ -156,8 +122,7 @@ export function Companies() {
   const { toast } = useToast();
   const limit = 10;
 
-  // Use mock data if API fails
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["companies", page, limit, searchQuery],
     queryFn: () => companyService.getAll({ page, limit, search: searchQuery }),
     retry: false,
@@ -166,7 +131,7 @@ export function Companies() {
 
   // Ensure unique companies by id to prevent duplicates
   const companies = useMemo(() => {
-    const rawCompanies = data?.companies || (error ? mockCompanies : []);
+    const rawCompanies = data?.companies || [];
     // Deduplicate by id
     const uniqueMap = new Map();
     rawCompanies.forEach((company: Company) => {
@@ -511,10 +476,18 @@ export function Companies() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load companies: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

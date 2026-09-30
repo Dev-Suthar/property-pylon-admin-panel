@@ -285,9 +285,9 @@ export function Billing() {
   const costBreakdownData = useMemo(() => {
     if (!report.total_costs) return [];
     return [
-      { name: 'EC2', value: report.total_costs.ec2, color: '#3b82f6' },
-      { name: 'S3', value: report.total_costs.s3, color: '#10b981' },
-      { name: 'Data Transfer', value: report.total_costs.data_transfer, color: '#f59e0b' },
+      { name: 'EC2', value: report.total_costs.ec2, color: 'rgb(var(--tw-blue-500))' },
+      { name: 'S3', value: report.total_costs.s3, color: 'rgb(var(--tw-emerald-500))' },
+      { name: 'Data Transfer', value: report.total_costs.data_transfer, color: 'rgb(var(--tw-amber-500))' },
     ].filter((item) => item.value > 0);
   }, [report.total_costs]);
 
@@ -541,27 +541,27 @@ export function Billing() {
                   {costsByCompanyData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={costsByCompanyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <CartesianGrid strokeDasharray="3 3" stroke='rgb(var(--tw-slate-200))' />
                         <XAxis
                           dataKey="name"
-                          stroke="#64748b"
+                          stroke='rgb(var(--tw-slate-500))'
                           style={{ fontSize: '12px' }}
                           angle={-45}
                           textAnchor="end"
                           height={80}
                         />
-                        <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
+                        <YAxis stroke='rgb(var(--tw-slate-500))' style={{ fontSize: '12px' }} />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e2e8f0',
+                            backgroundColor: 'rgb(var(--tw-white))',
+                            border: '1px solid rgb(var(--tw-slate-200))',
                             borderRadius: '8px',
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                           }}
                           formatter={(value: number) => formatCurrency(value)}
                         />
                         <Legend />
-                        <Bar dataKey="cost" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="cost" fill='rgb(var(--tw-blue-500))' radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -594,7 +594,7 @@ export function Billing() {
                         labelLine={false}
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         outerRadius={90}
-                        fill="#8884d8"
+                        fill='rgb(var(--tw-blue-500))'
                         dataKey="value"
                       >
                         {costBreakdownData.map((entry, index) => (
@@ -603,8 +603,8 @@ export function Billing() {
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: 'white',
-                          border: '1px solid #e2e8f0',
+                          backgroundColor: 'rgb(var(--tw-white))',
+                          border: '1px solid rgb(var(--tw-slate-200))',
                           borderRadius: '8px',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                         }}
@@ -635,27 +635,27 @@ export function Billing() {
               {storageByCompanyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={storageByCompanyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke='rgb(var(--tw-slate-200))' />
                     <XAxis
                       dataKey="name"
-                      stroke="#64748b"
+                      stroke='rgb(var(--tw-slate-500))'
                       style={{ fontSize: '12px' }}
                       angle={-45}
                       textAnchor="end"
                       height={80}
                     />
-                    <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
+                    <YAxis stroke='rgb(var(--tw-slate-500))' style={{ fontSize: '12px' }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e2e8f0',
+                        backgroundColor: 'rgb(var(--tw-white))',
+                        border: '1px solid rgb(var(--tw-slate-200))',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       }}
                       formatter={(value: number) => `${value.toFixed(2)} GB`}
                     />
                     <Legend />
-                    <Bar dataKey="storage" fill="#10b981" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="storage" fill='rgb(var(--tw-emerald-500))' radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

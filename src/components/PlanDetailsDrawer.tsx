@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
+import { PlanEntitlementsCard } from "@/components/admin/PlanEntitlementsCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Sheet,
@@ -435,32 +436,6 @@ export function PlanDetailsDrawer({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="max_properties">Max Properties</Label>
-              <Input
-                id="max_properties"
-                type="number"
-                value={editForm.max_properties}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, max_properties: e.target.value })
-                }
-                placeholder="Leave empty for unlimited"
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max_customers">Max Customers</Label>
-              <Input
-                id="max_customers"
-                type="number"
-                value={editForm.max_customers}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, max_customers: e.target.value })
-                }
-                placeholder="Leave empty for unlimited"
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Features</Label>
               <div className="flex gap-2">
                 <Input
@@ -646,26 +621,6 @@ export function PlanDetailsDrawer({
                           {displayData.period}
                         </p>
                       </div>
-                      {displayData.max_properties !== null && (
-                        <div>
-                          <Label className="text-sm text-muted-foreground">
-                            Max Properties
-                          </Label>
-                          <p className="font-semibold">
-                            {displayData.max_properties}
-                          </p>
-                        </div>
-                      )}
-                      {displayData.max_customers !== null && (
-                        <div>
-                          <Label className="text-sm text-muted-foreground">
-                            Max Customers
-                          </Label>
-                          <p className="font-semibold">
-                            {displayData.max_customers}
-                          </p>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
 
@@ -737,6 +692,8 @@ export function PlanDetailsDrawer({
                     </CardContent>
                   </Card>
                 </div>
+
+                <PlanEntitlementsCard plan={displayData} />
               </div>
             )}
           </div>
@@ -793,32 +750,6 @@ export function PlanDetailsDrawer({
                   <SelectItem value="yearly">Yearly</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-max_properties">Max Properties</Label>
-              <Input
-                id="edit-max_properties"
-                type="number"
-                value={editForm.max_properties}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, max_properties: e.target.value })
-                }
-                placeholder="Leave empty for unlimited"
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-max_customers">Max Customers</Label>
-              <Input
-                id="edit-max_customers"
-                type="number"
-                value={editForm.max_customers}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, max_customers: e.target.value })
-                }
-                placeholder="Leave empty for unlimited"
-                min="0"
-              />
             </div>
             <div className="space-y-2">
               <Label>Features</Label>

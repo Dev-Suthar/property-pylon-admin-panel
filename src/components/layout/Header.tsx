@@ -1,4 +1,7 @@
-import { Search, Bell, User, Settings, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Bell, User, Settings, LogOut, Moon, Sun, Menu } from 'lucide-react';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sidebar } from './Sidebar';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,10 +14,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminTheme } from '@/lib/theme';
 
 export function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggle } = useAdminTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -22,9 +28,18 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-slate-200/60 bg-white/80 backdrop-blur-md shadow-sm px-6">
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-2 border-b border-slate-200/60 bg-white/80 px-3 shadow-sm backdrop-blur-md sm:px-6">
       <div className="flex flex-1 items-center gap-4">
-        <div className="relative flex-1 max-w-md">
+        <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <Menu className="h-5 w-5" />
+        </Button>
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetContent side="left" className="w-64 p-0">
+            <SheetTitle className="sr-only">Menu</SheetTitle>
+            <Sidebar className="flex h-full w-full border-0" onNavigate={() => setMenuOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        <div className="relative hidden max-w-md flex-1 sm:block">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
@@ -35,6 +50,16 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggle}
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to CRED dark theme'}
+          aria-label="Toggle theme"
+          className="h-10 w-10 rounded-xl hover:bg-slate-100 transition-all duration-200"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5 text-slate-600" /> : <Moon className="h-5 w-5 text-slate-600" />}
+        </Button>
         <Button 
           variant="ghost" 
           size="icon" 

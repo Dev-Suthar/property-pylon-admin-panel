@@ -1,7 +1,14 @@
 import { apiClient, handleApiError } from '@/lib/api';
 
+export type ModuleKey = 'builder' | 'templates' | 'reports' | 'attendance' | 'rentals' | 'partners';
+export type LimitKey = 'users' | 'leads' | 'listings' | 'projects';
+
 export interface SubscriptionPlan {
   id: string;
+  /** Missing key = on. */
+  modules?: Partial<Record<ModuleKey, boolean>>;
+  /** null = unlimited. */
+  limits?: Partial<Record<LimitKey, number | null>>;
   name: string;
   price: number;
   period: 'monthly' | 'yearly';
@@ -33,6 +40,8 @@ export interface CreateSubscriptionPlanData {
 }
 
 export interface UpdateSubscriptionPlanData {
+  modules?: Partial<Record<ModuleKey, boolean>>;
+  limits?: Partial<Record<LimitKey, number | null>>;
   name?: string;
   price?: number;
   period?: 'monthly' | 'yearly';

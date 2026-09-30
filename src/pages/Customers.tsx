@@ -75,43 +75,6 @@ import { CustomerDetailsDrawer } from "@/components/CustomerDetailsDrawer";
 import { customerService, Customer, CreateCustomerData } from "@/services/customerService";
 import { formatPriceWithCurrency } from "@/utils/priceUtils";
 
-const mockCustomers: Customer[] = [
-  {
-    id: "1",
-    company_id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+91 98765 43210",
-    status: "active",
-    budget_min: 5000000,
-    budget_max: 10000000,
-    created_at: "2024-01-15T00:00:00Z",
-    updated_at: "2024-01-15T00:00:00Z",
-  },
-  {
-    id: "2",
-    company_id: "1",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    phone: "+91 98765 43211",
-    status: "active",
-    budget_min: 3000000,
-    budget_max: 6000000,
-    created_at: "2024-02-20T00:00:00Z",
-    updated_at: "2024-02-20T00:00:00Z",
-  },
-  {
-    id: "3",
-    company_id: "2",
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    phone: "+91 98765 43212",
-    status: "inactive",
-    created_at: "2024-03-10T00:00:00Z",
-    updated_at: "2024-03-10T00:00:00Z",
-  },
-];
-
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
     {[...Array(5)].map((_, i) => (
@@ -163,7 +126,7 @@ export function Customers() {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const limit = 10;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["customers", page, limit, searchQuery, statusFilter, typeFilter, hotLeadFilter, budgetMinFilter, budgetMaxFilter],
     queryFn: () =>
       customerService.getAll({
@@ -181,7 +144,7 @@ export function Customers() {
   });
 
   const customers = useMemo(() => {
-    const rawCustomers = data?.customers || (error ? mockCustomers : []);
+    const rawCustomers = data?.customers || [];
     const uniqueMap = new Map();
     rawCustomers.forEach((customer: Customer) => {
       if (customer.id && !uniqueMap.has(customer.id)) {
@@ -515,10 +478,18 @@ export function Customers() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load customers: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

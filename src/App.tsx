@@ -20,6 +20,12 @@ import { Settings } from './pages/Settings';
 import { Salesmen } from './pages/Salesmen';
 import { AppVersions } from './pages/AppVersions';
 import { Billing } from './pages/Billing';
+import { AuditLog } from './pages/AuditLog';
+import { Permissions } from './pages/config/Permissions';
+import { MasterLists } from './pages/config/MasterLists';
+import { Notices } from './pages/Notices';
+import CompanyWorkspace from './pages/company/CompanyWorkspace';
+import { ConfirmProvider } from './components/admin/ConfirmDialog';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,176 +37,47 @@ const queryClient = new QueryClient({
   },
 });
 
+const guarded = (el: React.ReactNode) => (
+  <ProtectedRoute>
+    <MainLayout>{el}</MainLayout>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ConfirmProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Navigate to="/dashboard" replace />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Dashboard />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/workspace"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Workspace />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/companies"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Companies />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Users />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/properties"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Properties />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/customers"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Customers />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/subscriptions"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Subscriptions />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/billing"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Billing />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notification-templates"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <NotificationTemplates />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/push-notifications"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <PushNotifications />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/activity"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Activity />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Reports />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Settings />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/salesmen"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Salesmen />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/app-versions"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <AppVersions />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={guarded(<Navigate to="/dashboard" replace />)} />
+            <Route path="/dashboard" element={guarded(<Dashboard />)} />
+            <Route path="/workspace" element={guarded(<Workspace />)} />
+            <Route path="/companies" element={guarded(<Companies />)} />
+            <Route path="/users" element={guarded(<Users />)} />
+            <Route path="/properties" element={guarded(<Properties />)} />
+            <Route path="/customers" element={guarded(<Customers />)} />
+            <Route path="/subscriptions" element={guarded(<Subscriptions />)} />
+            <Route path="/billing" element={guarded(<Billing />)} />
+            <Route path="/notification-templates" element={guarded(<NotificationTemplates />)} />
+            <Route path="/push-notifications" element={guarded(<PushNotifications />)} />
+            <Route path="/activity" element={guarded(<Activity />)} />
+            <Route path="/reports" element={guarded(<Reports />)} />
+            <Route path="/settings" element={guarded(<Settings />)} />
+            <Route path="/salesmen" element={guarded(<Salesmen />)} />
+            <Route path="/app-versions" element={guarded(<AppVersions />)} />
+            <Route path="/audit-log" element={guarded(<AuditLog />)} />
+            <Route path="/permissions" element={guarded(<Permissions />)} />
+            <Route path="/master-lists" element={guarded(<MasterLists />)} />
+            <Route path="/notices" element={guarded(<Notices />)} />
+            <Route path="/c/:companyId" element={guarded(<CompanyWorkspace />)} />
+            <Route path="/c/:companyId/:module" element={guarded(<CompanyWorkspace />)} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
         <Toaster />
+        </ConfirmProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

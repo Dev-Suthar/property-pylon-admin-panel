@@ -23,10 +23,10 @@ export const CONFIG = {
     REFRESH_TOKEN: 'refreshToken',
   },
   USER_ROLES: {
-    ADMIN: 'admin',
-    AGENT: 'agent',
+    OWNER: 'owner',
     MANAGER: 'manager',
-    CUSTOMER: 'customer',
+    AGENT: 'agent',
+    TELECALLER: 'telecaller',
   },
   ANIMATION_DURATION: 300,
   DEBOUNCE_DELAY: 500,

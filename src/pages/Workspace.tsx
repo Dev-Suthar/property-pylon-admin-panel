@@ -1,72 +1,20 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { companyService } from '@/services/companyService';
-import PipelineTab from './workspace/PipelineTab';
-import VisitsTab from './workspace/VisitsTab';
-import TasksTab from './workspace/TasksTab';
-import DealsTab from './workspace/DealsTab';
-import PartnersTab from './workspace/PartnersTab';
-import RentalsTab from './workspace/RentalsTab';
-import AttendanceTab from './workspace/AttendanceTab';
-import InsightsTab from './workspace/InsightsTab';
-import LeadsTab from './workspace/LeadsTab';
-
-const TABS = [
-  ['pipeline', 'Pipeline', PipelineTab],
-  ['visits', 'Visits', VisitsTab],
-  ['followups', 'Follow-ups', TasksTab],
-  ['deals', 'Deals & commission', DealsTab],
-  ['partners', 'Partners', PartnersTab],
-  ['rentals', 'Rentals', RentalsTab],
-  ['attendance', 'Attendance', AttendanceTab],
-  ['insights', 'Insights', InsightsTab],
-  ['leads', 'Leads & import', LeadsTab],
-] as const;
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { lastCompany, useCompanies } from '@/contexts/CompanyContext';
+import { LEGACY_TABS } from './company/modules';
 
 /**
- * Everything an agency does in the broker app, operable by a platform admin
- * for any company (support, onboarding, bulk imports).
+ * /workspace → /c/:companyId/:module. Keeps old ?company=&tab= links
+ * working and reopens the last company the admin used.
  */
 export default function Workspace() {
-  const [params, setParams] = useSearchParams();
-  const companyId = params.get('company') || '';
-  const tab = params.get('tab') || 'pipeline';
-  const { data } = useQuery({ queryKey: ['companies', 'workspace'], queryFn: () => companyService.getAll({ limit: 100 }) });
-  const companies = (data?.companies ?? []).filter((c) => c.name !== 'System');
+  const [params] = useSearchParams();
+  const { companies, isLoading, error } = useCompanies();
+  const tab = params.get('tab') || 'overview';
+  const wanted = params.get('company') || lastCompany();
+  const id = companies.find((c) => c.id === wanted)?.id ?? companies[0]?.id;
 
-  useEffect(() => {
-    if (!companyId && companies.length) setParams({ company: companies[0].id, tab }, { replace: true });
-  }, [companyId, companies, tab, setParams]);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Agency workspace</h1>
-          <p className="mt-1 text-slate-600">Run any agency exactly like the broker app: pipeline, visits, follow-ups, deals, partners and more.</p>
-        </div>
-        <Select value={companyId} onValueChange={(id) => setParams({ company: id, tab })}>
-          <SelectTrigger className="w-72"><SelectValue placeholder="Select a company" /></SelectTrigger>
-          <SelectContent>
-            {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      {companyId ? (
-        <Tabs value={tab} onValueChange={(t) => setParams({ company: companyId, tab: t })}>
-          <TabsList className="flex h-auto flex-wrap justify-start gap-1">
-            {TABS.map(([value, label]) => <TabsTrigger key={value} value={value}>{label}</TabsTrigger>)}
-          </TabsList>
-          {TABS.map(([value, , Component]) => (
-            <TabsContent key={value} value={value} className="mt-6">
-              {tab === value ? <Component companyId={companyId} /> : null}
-            </TabsContent>
-          ))}
-        </Tabs>
-      ) : null}
-    </div>
-  );
+  if (isLoading) return <p className="py-10 text-center text-slate-500">Loading companies…</p>;
+  if (error) return <p className="py-10 text-center text-red-600">{(error as Error).message}</p>;
+  if (!id) return <p className="py-10 text-center text-slate-500">No companies yet. Create one under Companies.</p>;
+  return <Navigate to={`/c/${id}/${LEGACY_TABS[tab] ?? tab}`} replace />;
 }

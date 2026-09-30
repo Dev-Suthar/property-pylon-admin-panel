@@ -56,57 +56,7 @@ import {
 } from "@/services/subscriptionPlanService";
 import { formatPriceWithCurrency } from "@/utils/priceUtils";
 import { PlanDetailsDrawer } from "@/components/PlanDetailsDrawer";
-
-const mockPlans: SubscriptionPlan[] = [
-  {
-    id: "1",
-    name: "Basic Plan",
-    price: 4999,
-    period: "monthly",
-    features: ["Up to 50 properties", "Up to 100 customers"],
-    popular: false,
-    max_properties: 50,
-    max_customers: 100,
-    is_active: true,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Professional Plan",
-    price: 9999,
-    period: "monthly",
-    features: [
-      "Up to 200 properties",
-      "Up to 500 customers",
-      "Priority support",
-    ],
-    popular: true,
-    max_properties: 200,
-    max_customers: 500,
-    is_active: true,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: "3",
-    name: "Enterprise Plan",
-    price: 19999,
-    period: "monthly",
-    features: [
-      "Unlimited properties",
-      "Unlimited customers",
-      "Priority support",
-      "Custom integrations",
-    ],
-    popular: false,
-    max_properties: undefined,
-    max_customers: undefined,
-    is_active: true,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-];
+import { CompanySubscriptions } from "@/components/admin/CompanySubscriptions";
 
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
@@ -151,7 +101,7 @@ export function Subscriptions() {
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const limit = 10;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["subscription-plans", page, limit, searchQuery, statusFilter],
     queryFn: () =>
       subscriptionPlanService.getAll({
@@ -166,7 +116,7 @@ export function Subscriptions() {
   });
 
   const plans = useMemo(() => {
-    const rawPlans = data?.plans || (error ? mockPlans : []);
+    const rawPlans = data?.plans || [];
     const uniqueMap = new Map();
     rawPlans.forEach((plan: SubscriptionPlan) => {
       if (plan.id && !uniqueMap.has(plan.id)) {
@@ -241,9 +191,9 @@ export function Subscriptions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Subscriptions</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Plans & subscriptions</h1>
           <p className="text-muted-foreground">
-            Manage subscription plans available in the mobile application
+            Plans decide which modules a company gets and how many users, leads, listings and projects it can have.
           </p>
         </div>
         <Button
@@ -287,10 +237,18 @@ export function Subscriptions() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load subscription plans: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -508,6 +466,8 @@ export function Subscriptions() {
           )}
         </div>
       )}
+
+      <CompanySubscriptions />
 
       {/* Plan Details Drawer */}
       <PlanDetailsDrawer

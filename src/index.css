@@ -44,40 +44,50 @@
     --chart-5: 280 100% 70%;
   }
 
-  .dark {
-    --background: 220 13% 9%;
-    --foreground: 220 13% 98%;
-    
-    --card: 220 13% 11%;
-    --card-foreground: 220 13% 98%;
-    
-    --popover: 220 13% 11%;
-    --popover-foreground: 220 13% 98%;
-    
-    --primary: 220 91% 50%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 220 13% 15%;
-    --secondary-foreground: 220 13% 85%;
-    
-    --muted: 220 13% 15%;
-    --muted-foreground: 220 8% 65%;
-    
-    --accent: 220 13% 18%;
-    --accent-foreground: 220 13% 85%;
-    
-    --destructive: 0 62% 50%;
+  /* CRED / NeoPOP (default). Mirrors the mobile app's dark palette. */
+  [data-theme="dark"] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 44 100% 97%;
+    --primary-foreground: 0 0% 5%;
+
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 0 0% 11%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 7 84% 57%;
     --destructive-foreground: 0 0% 100%;
-    
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 220 91% 50%;
-    
-    --chart-1: 220 91% 50%;
-    --chart-2: 142 76% 45%;
-    --chart-3: 38 92% 60%;
-    --chart-4: 0 62% 50%;
-    --chart-5: 280 100% 70%;
+
+    --success: 154 94% 39%;
+    --success-foreground: 0 0% 5%;
+
+    --border: 0 0% 14%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 100%;
+
+    --radius: 4px;
+
+    --chart-1: 44 100% 97%;
+    --chart-2: 154 94% 39%;
+    --chart-3: 29 86% 57%;
+    --chart-4: 7 84% 57%;
+    --chart-5: 0 0% 55%;
+
+    /* NeoPOP raised edge under cream buttons */
+    --neo-edge: #8a8578;
+    color-scheme: dark;
   }
 }
 
@@ -86,7 +96,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 text-foreground;
+    @apply bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
   }
@@ -119,21 +129,21 @@
 /* Enhanced Table Styling */
 table {
   border-collapse: separate;
-  border-spacing: 0 12px;
+  border-spacing: 0 6px;
 }
 
 thead tr {
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 2px solid rgb(var(--tw-slate-100));
 }
 
 thead th {
-  background-color: #ffffff;
-  padding: 18px 20px;
+  background-color: rgb(var(--tw-white));
+  padding: 12px 16px;
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #475569;
+  color: rgb(var(--tw-slate-600));
   position: sticky;
   top: 0;
   z-index: 10;
@@ -141,39 +151,39 @@ thead th {
 }
 
 tbody tr {
-  background-color: #ffffff;
-  border-radius: 10px;
+  background-color: rgb(var(--tw-white));
+  border-radius: var(--r-lg);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  border: 1px solid rgb(var(--tw-slate-100));
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 tbody tr:hover {
-  background: linear-gradient(to right, #ffffff, #f8fafc);
+  background: linear-gradient(to right, rgb(var(--tw-white)), rgb(var(--tw-slate-50)));
   box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
   transform: translateY(-2px);
-  border-color: #cbd5e1;
+  border-color: rgb(var(--tw-slate-300));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 tbody td {
-  padding: 22px 20px;
+  padding: 12px 16px;
   border: none;
   vertical-align: middle;
-  color: #1e293b;
+  color: rgb(var(--tw-slate-800));
   font-size: 14px;
   line-height: 1.6;
 }
 
 tbody td:first-child {
-  border-top-left-radius: 10px;
-  border-bottom-left-radius: 10px;
+  border-top-left-radius: var(--r-lg);
+  border-bottom-left-radius: var(--r-lg);
 }
 
 tbody td:last-child {
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
+  border-top-right-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-lg);
 }
 
 /* Sortable header buttons */
@@ -192,5 +202,13 @@ thead th button {
 }
 
 thead th button:hover {
-  color: #1e293b;
+  color: rgb(var(--tw-slate-900));
 }
+
+/* CRED: flat rows, hairline borders, no lift; NeoPOP edge on primary buttons */
+[data-theme="dark"] tbody tr { box-shadow: none; }
+[data-theme="dark"] tbody tr:hover { transform: none; box-shadow: none; background: rgb(var(--tw-slate-100)); }
+[data-theme="dark"] thead th { box-shadow: inset 0 -1px 0 rgb(var(--tw-slate-200)); letter-spacing: 1.2px; }
+[data-theme="dark"] .neo { box-shadow: 3px 3px 0 0 var(--neo-edge); transition: transform 80ms, box-shadow 80ms; }
+[data-theme="dark"] .neo:hover { box-shadow: 3px 3px 0 0 var(--neo-edge); }
+[data-theme="dark"] .neo:active { transform: translate(3px, 3px); box-shadow: 0 0 0 0 var(--neo-edge); }

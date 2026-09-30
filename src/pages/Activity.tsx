@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -35,42 +36,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { activityService, type Activity } from "@/services/activityService";
-
-const mockActivities: Activity[] = [
-  {
-    id: "1",
-    company_id: "1",
-    user_id: "1",
-    user_name: "John Doe",
-    activity_type: "property_created",
-    entity_type: "property",
-    entity_id: "1",
-    description: "Created new property: Luxury Apartment in Downtown",
-    created_at: "2024-06-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    company_id: "1",
-    user_id: "2",
-    user_name: "Jane Smith",
-    activity_type: "customer_updated",
-    entity_type: "customer",
-    entity_id: "1",
-    description: "Updated customer: John Doe",
-    created_at: "2024-06-15T09:15:00Z",
-  },
-  {
-    id: "3",
-    company_id: "2",
-    user_id: "3",
-    user_name: "Bob Johnson",
-    activity_type: "visit_scheduled",
-    entity_type: "visit",
-    entity_id: "1",
-    description: "Scheduled visit for property: Modern Villa",
-    created_at: "2024-06-14T14:20:00Z",
-  },
-];
 
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
@@ -103,7 +68,7 @@ export function Activity() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const limit = 10;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["activities", page, limit, searchQuery, typeFilter],
     queryFn: () =>
       activityService.getAll({
@@ -117,7 +82,7 @@ export function Activity() {
   });
 
   const activities = useMemo(() => {
-    const rawActivities = data?.data || data?.activities || (error ? mockActivities : []);
+    const rawActivities = data?.data || data?.activities || [];
     const uniqueMap = new Map();
     rawActivities.forEach((activity: Activity) => {
       if (activity.id && !uniqueMap.has(activity.id)) {
@@ -237,10 +202,18 @@ export function Activity() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load activities: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

@@ -78,55 +78,6 @@ import { PropertyDetailsDrawer } from "@/components/PropertyDetailsDrawer";
 import { formatPriceWithCurrency } from "@/utils/priceUtils";
 import { User } from "lucide-react";
 
-// Mock data fallback
-const mockProperties: Property[] = [
-  {
-    id: "1",
-    company_id: "1",
-    title: "Luxury Apartment in Downtown",
-    property_type: "apartment",
-    status: "available",
-    price: 5000000,
-    address: "123 Main St",
-    city: "Ahmedabad",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1500,
-    created_at: "2024-01-15T00:00:00Z",
-    updated_at: "2024-01-15T00:00:00Z",
-  },
-  {
-    id: "2",
-    company_id: "1",
-    title: "Modern Villa with Garden",
-    property_type: "villa",
-    status: "sold",
-    price: 12000000,
-    address: "456 Park Ave",
-    city: "Ahmedabad",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 2500,
-    created_at: "2024-02-20T00:00:00Z",
-    updated_at: "2024-02-20T00:00:00Z",
-  },
-  {
-    id: "3",
-    company_id: "2",
-    title: "Commercial Office Space",
-    property_type: "commercial",
-    status: "available",
-    price: 8000000,
-    address: "789 Business Park",
-    city: "Ahmedabad",
-    bedrooms: 0,
-    bathrooms: 2,
-    area: 3000,
-    created_at: "2024-03-10T00:00:00Z",
-    updated_at: "2024-03-10T00:00:00Z",
-  },
-];
-
 const TableSkeleton = () => (
   <div className="space-y-4 p-6">
     {[...Array(5)].map((_, i) => (
@@ -176,7 +127,7 @@ export function Properties() {
   const { toast } = useToast();
   const limit = 10;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["properties", page, limit, searchQuery, statusFilter, dealStatusFilter, typeFilter, priceMinFilter, priceMaxFilter],
     queryFn: () =>
       propertyService.getAll({
@@ -215,7 +166,7 @@ export function Properties() {
   }, [customersData]);
 
   const properties = useMemo(() => {
-    const rawProperties = data?.properties || (error ? mockProperties : []);
+    const rawProperties = data?.properties || [];
     const uniqueMap = new Map();
     rawProperties.forEach((property: Property) => {
       if (property.id && !uniqueMap.has(property.id)) {
@@ -642,10 +593,18 @@ export function Properties() {
       </div>
 
       {error && (
-        <Alert>
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Using mock data. Backend API not available. Error: {error.message}
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>Failed to load properties: {error.message}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              {isFetching ? "Retrying..." : "Retry"}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

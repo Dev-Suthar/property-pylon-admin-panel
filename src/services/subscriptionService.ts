@@ -42,10 +42,11 @@ export interface SubscriptionsResponse {
 export interface CreateSubscriptionData {
   company_id: string;
   plan_id: string;
-  billing_cycle: string;
+  billing_cycle?: string;
 }
 
 export interface UpdateSubscriptionData {
+  renewal_date?: string;
   status?: string;
   plan_id?: string;
   billing_cycle?: string;
