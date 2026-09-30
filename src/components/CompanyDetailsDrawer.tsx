@@ -2206,10 +2206,10 @@ export function CompanyDetailsDrawer({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="agent">Agent</SelectItem>
+                  <SelectItem value="telecaller">Telecaller</SelectItem>
                 </SelectContent>
               </Select>
             </div>

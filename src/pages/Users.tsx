@@ -319,9 +319,10 @@ export function Users() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="owner">Owner</SelectItem>
                       <SelectItem value="manager">Manager</SelectItem>
                       <SelectItem value="agent">Agent</SelectItem>
+                      <SelectItem value="telecaller">Telecaller</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -566,7 +567,7 @@ export function Users() {
                   <Select name="role" defaultValue={editingUser.role}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {['admin', 'manager', 'agent'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {['owner', 'manager', 'agent', 'telecaller'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

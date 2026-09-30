@@ -74,27 +74,11 @@ export const getApiBaseUrl = (): string => {
     return envUrl;
   }
 
-  const env = getEnvironment();
-
-  // Development URLs
-  if (env === "development") {
-    // Option 1: Use domain (recommended for production)
-    return "http://98.92.75.163:3000/api/v1";
-    // Option 2: Use IP directly (fallback)
-    // return "http://98.92.75.163:3000/api/v1";
+  // Local dev talks to a local backend; everything else to the live API.
+  if (getEnvironment() === "development") {
+    return "http://localhost:3000/api/v1";
   }
-
-  // Staging URL
-  if (env === "staging") {
-    // Use domain for staging
-    return "http://98.92.75.163:3000/api/v1";
-    // Fallback: "http://98.92.75.163:3000/api/v1";
-  }
-
-  // Production URL
-  // Use domain for production (HTTPS)
-  return "http://98.92.75.163:3000/api/v1";
-  // Fallback: "http://98.92.75.163:3000/api/v1";
+  return "https://api.dreamtobuy.com/api/v1";
 };
 
 /**
